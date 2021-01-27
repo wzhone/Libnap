@@ -1,0 +1,54 @@
+number = 13
+line = 3
+
+pt>pt>pt>pt>pt>pt>
+unsafe
+cHQ+cHQ+cHQ+cHQ+cHQ+cHQ+
+
+pt>pt>pt>pt>pt>pt>
+safe
+cHQ-cHQ-cHQ-cHQ-cHQ-cHQ-
+
+has a?F? pt>
+unsafe
+aGFzIGE/Rj8gcHQ+
+
+has a?F? pt>
+safe
+aGFzIGE_Rj8gcHQ-
+
+ABC
+safe
+QUJD
+
+ABCD
+safe
+QUJDRA==
+
+ABCDE
+safe
+QUJDREU=
+
+ABCDEF
+safe
+QUJDREVG
+
+While there is life there is hope.
+safe
+V2hpbGUgdGhlcmUgaXMgbGlmZSB0aGVyZSBpcyBob3BlLg==
+
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+safe
+QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=
+
+abcdefghijklmnopqrstuvwxyz
+safe
+YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=
+
+1234567890
+safe
+MTIzNDU2Nzg5MA==
+
+ABCDEFGHIJKLMNopqrstuvwxyz1234567890
+safe
+QUJDREVGR0hJSktMTU5vcHFyc3R1dnd4eXoxMjM0NTY3ODkw
