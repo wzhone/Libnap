@@ -96,7 +96,7 @@ inline JsonNode& JsonNode::operator=(const T& value) {
 	}else {
 		_type = JsonType::String;
 	}
-	_bindata = btring::from<T>(value);
+	_bindata = btring::from(value);
 	return *this;
 }
 
