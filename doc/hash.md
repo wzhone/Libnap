@@ -5,50 +5,42 @@
 > 详细类定义请见  `src/hash.h`
 
 <br/>
-<br/>
 
-## SHA256
+当前已经实现的Hash方法有 
 
-#### 描述:
+1. SHA256
 
-使用`add`方法不断将数据加入到`SHA256`类中,然后通过`calculator`函数计算输出sha256值.
+2. SHA1
 
-注意:输出的值是二进制数据,如果想要将其输出到屏幕上,需要使用base16或base64之类的方法进行处理.
+3. MD5
 
-<br/>
 
-#### 示例:
+这些函数类都继承自`Hash`类，所以接口统一的。Hash类的定义如下：
 
 ```c++
-SHA256 sha256;
-const char* str1 = "Part of string";
-const char* str2 = "Another part of the string";
-
-sha256.add(str1, strlen(str2));
-sha256.add(str2, strlen(str2));
-
-btring sha256str = sha256.calculator();
-cout << Hex::encode(sha256str);
+class Hash {
+public:
+	virtual void add(const char* data, size_t len) = 0;
+	virtual void add(btring data) = 0;
+	virtual btring calculate() = 0;
+	virtual void reset() = 0;
+};
 ```
 
-<br/>
-<br/>
+**调用过程为：**
 
-## MD5
+1. 调用add函数添加数据。
+2. 调用calculate计算结果并返回二进制数据。
+3. (可选) 通过Base64或Hex等方法将二进制数据转换为可打印字符。
 
-#### 描述:
+**无论在什么状态，都可以调用 `reset` 清除之前的数据。计算之后复用实例也需要调用`reset`**
 
-使用`add`方法不断将数据加入到`MD5`类中,然后通过`calculator`函数计算输出md5值.
+<br/><br/>
 
-注意:输出的值是二进制数据,如果想要将其输出到屏幕上,需要使用base16或base64之类的方法进行处理.
-
-<br/>
-
-#### 示例:
+### 示例 ：计算文件的Hash值
 
 ```c++
 /*
-	这是一个使用MD5模块计算文件md5的例子。
 	需要注意的是这个例子并非是高效的。
 */
 int main() {
@@ -56,17 +48,23 @@ int main() {
 	if (fp == NULL) {
 		return -1;
 	}
-	MD5 md5;
+    
+    /* 根据需求选择不同的类  */
+    //Hash* hash = new MD5;
+    //Hash* hash = new SHA1;
+	Hash* hash = new SHA256;
+
 	char* buffer = new char[1048576];
 	while (1) {
 		int ret = fread(buffer, 1, 1048576, fp);
 		if (ret > 0) {
-			md5.add(buffer, ret);
-		} else {
+			hash->add(buffer, ret);
+		}
+		else {
 			break;
 		}
 	}
-	btring res = md5.calculator();
+	btring res = hash->calculate();
 	fclose(fp);
 	cout << Hex::encode(res);
 	return 0;

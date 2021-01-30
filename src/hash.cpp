@@ -58,12 +58,11 @@ uint64_t SWAP64(uint64_t value) {
 #define SHA256_LSI0(x) (SHA256S(7,(x)) ^ SHA256S(18,(x)) ^ SHA256R(3,(x)))
 #define SHA256_LSI1(x) (SHA256S(17,(x)) ^ SHA256S(19,(x)) ^ SHA256R(10,(x)))
 
-
 SHA256::SHA256(){
-	memcpy(&sha256, &sha256_init, sizeof(sha256));
+	reset();
 }
 
-btring SHA256::calculator(){
+btring SHA256::calculate(){
 	sha256_buffer[sha256_buffer_len] = 0x80;
 	memset(
 		sha256_buffer + sha256_buffer_len + 1
@@ -114,6 +113,17 @@ void SHA256::add(const char* data, size_t len){
 			break;
 		}
 	};
+}
+
+void SHA256::add(btring data){
+	this->add((const char*)data.str(), data.size());
+}
+
+void SHA256::reset(){
+	memcpy(&sha256, &sha256_init, sizeof(sha256));
+	memset(sha256_buffer, 0, 64);
+	sha256_buffer_len = 0;
+	calByte = 0;
 }
 
 void SHA256::calSHA256(){
@@ -173,7 +183,7 @@ void SHA256::calSHA256(){
 
 ///////----------------md5
 
-static uint8_t MD5_PADDING[64] = {
+static uint8_t _PADDING[64] = { //use by md5 & sha1
   0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -229,13 +239,10 @@ static uint8_t MD5_PADDING[64] = {
 }
 
 MD5::MD5(){
-	this->_md_buf[0] = 0x67452301;
-	this->_md_buf[1] = 0xefcdab89;
-	this->_md_buf[2] = 0x98badcfe;
-	this->_md_buf[3] = 0x10325476;
+	reset();
 }
 
-btring MD5::calculator(){
+btring MD5::calculate(){
 	uint64_t length = _round * 64ULL + _block_buffer_len;
 	length *= 8ULL;
 	uint8_t a_length[8] = {};
@@ -250,8 +257,9 @@ btring MD5::calculator(){
 	} else {
 		padding = 64 - (_block_buffer_len - 56);
 	}
-	this->add((const char*)MD5_PADDING, padding);
+	this->add((const char*)_PADDING, padding);
 	this->add((const char*)a_length, 8);
+
 
 	return btring(_md_buf,16);
 }
@@ -260,6 +268,17 @@ void MD5::add(btring _data){
 	const char* data = (const char*)_data.str();
 
 	this->add(data, _data.size());
+}
+
+void MD5::reset(){
+	this->_md_buf[0] = 0x67452301;
+	this->_md_buf[1] = 0xefcdab89;
+	this->_md_buf[2] = 0x98badcfe;
+	this->_md_buf[3] = 0x10325476;
+
+	memset(_block_buffer, 0, sizeof(_block_buffer));
+	_block_buffer_len = 0;
+	this->_round = 0;
 }
 
 void MD5::add(const char* data, size_t len){
@@ -390,7 +409,154 @@ void MD5::dword2byte(uint8_t* output, uint32_t* input, uint32_t length){
 
 
 
+///////----------------sha1
+
+const uint32_t SHA1_K[4] ={
+	0x5A827999, // [0,19]
+	0x6ED9EBA1, // [20,39]
+	0x8F1BBCDC, // [40,59]
+	0xCA62C1D6  // [60,79]
+};
+
+#define SHA1_S(bits,word) (((word) << (bits)) | ((word) >> (32-(bits))))
+
+
+
+SHA1::SHA1(){
+	reset();
+}
+
+btring SHA1::calculate(){
+	uint64_t length = _round * 64ULL + _b_buf_len;
+	length *= 8ULL;
+	length = htonll(length);
+
+	uint32_t padding = 0;
+	if (_b_buf_len < 56) {
+		padding = 56 - _b_buf_len;
+	}else if (_b_buf_len == 56) {
+		padding = 64;
+	}else {
+		padding = 64 - (_b_buf_len - 56);
+	}
+	this->add((const char*)_PADDING, padding);
+	this->add((const char*)&length, 8);
+
+	_h[0] = htonl(_h[0]);
+	_h[1] = htonl(_h[1]);
+	_h[2] = htonl(_h[2]);
+	_h[3] = htonl(_h[3]);
+	_h[4] = htonl(_h[4]);
+
+	return btring(_h, 20);
+}
+
+void SHA1::add(const char* data, size_t len) {
+	while (true) {
+		if (_b_buf_len + len < 64) {
+			memcpy(_b_buf + _b_buf_len, data, len);
+			_b_buf_len += len;
+			return;
+		}
+		int need = 64 - _b_buf_len;
+		memcpy(_b_buf + _b_buf_len, data, need);
+		len -= need;
+		data += need;
+		this->_sha1_transform();
+		_b_buf_len = 0;
+	}
+}
+
+void SHA1::add(btring _data){
+	const char* data = (const char*)_data.str();
+	this->add(data, _data.size());
+}
+
+void SHA1::reset(){
+
+	memset(_b_buf, 0, sizeof(_b_buf));
+
+	this->_h[0] = 0x67452301;
+	this->_h[1] = 0xEFCDAB89;
+	this->_h[2] = 0x98BADCFE;
+	this->_h[3] = 0x10325476;
+	this->_h[4] = 0xC3D2E1F0;
+
+	this->_round = 0;
+	this->_b_buf_len = 0;
+}
+
+void SHA1::_sha1_transform(){
+	_round++;
+	uint32_t w[80] = {}; //w[80]  2560bit 320Byte
+	uint32_t tmp;
+
+	for (int i = 0; i < 16; i++) {
+		w[i] = this->_b_buf[i * 4] << 24;
+		w[i] |= this->_b_buf[i * 4 + 1] << 16;
+		w[i] |= this->_b_buf[i * 4 + 2] << 8;
+		w[i] |= this->_b_buf[i * 4 + 3];
+	}
+
+	for (int t = 16; t < 80; t++) {
+		w[t] = SHA1_S(1,(w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16]));
+	}
+
+	uint32_t A = this->_h[0];
+	uint32_t B = this->_h[1];
+	uint32_t C = this->_h[2];
+	uint32_t D = this->_h[3];
+	uint32_t E = this->_h[4];
+
+	//1
+	for (int t = 0; t < 20; t++) {
+		tmp = SHA1_S(5,A) + ((B & C) | ((~B)&D));
+		tmp += E + w[t] + SHA1_K[0];
+		E = D;
+		D = C;
+		C = SHA1_S(30,B);
+		B = A;
+		A = tmp;
+	}
+	//2
+	for (int t = 20; t < 40; t++) {
+		tmp = SHA1_S(5, A) + (B ^ C ^ D);
+		tmp += E + w[t] + SHA1_K[1];
+		E = D;
+		D = C;
+		C = SHA1_S(30, B);
+		B = A;
+		A = tmp;
+	}
+	//3
+	for (int t = 40; t < 60; t++) {
+		tmp = SHA1_S(5, A) + ((B & C) | (B & D) | (C & D));
+		tmp += E + w[t] + SHA1_K[2];
+		E = D;
+		D = C;
+		C = SHA1_S(30, B);
+		B = A;
+		A = tmp;
+	}
+	//4
+	for (int t = 60; t < 80; t++) {
+		tmp = SHA1_S(5, A) + (B ^ C ^ D);
+		tmp += E + w[t] + SHA1_K[3];
+		E = D;
+		D = C;
+		C = SHA1_S(30, B);
+		B = A;
+		A = tmp;
+	}
+
+	this->_h[0] += A;
+	this->_h[1] += B;
+	this->_h[2] += C;
+	this->_h[3] += D;
+	this->_h[4] += E;
+}
+
+
 
 
 _NAP_END
-

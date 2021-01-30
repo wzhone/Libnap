@@ -107,11 +107,36 @@ bool aes_128_cbc(vector<string>& n) {
 
 bool sha256(vector<string>& n) {
 	SHA256 S;
+	S.add("nouse");
+	S.reset();
 	S.add((const char*)n[0].c_str(), n[0].size());
 	S.add((const char*)n[1].c_str(), n[1].size());
-	btring sha256 = S.calculator();
+	btring sha256 = S.calculate();
 	btring sha256_hex = Hex::encode(sha256, false);
-	return (sha256_hex == n[2]);
+	NAPASSERT(sha256_hex == n[2]);
+	S.reset();
+	S.add((const char*)n[0].c_str(), n[0].size());
+	S.add((const char*)n[1].c_str(), n[1].size());
+	sha256 = S.calculate();
+	sha256_hex = Hex::encode(sha256, false);
+	NAPASSERT(sha256_hex == n[2]);
+	return true;
+}
+
+bool sha1(vector<string>& n) {
+	SHA1 S;
+	S.add("nouse");
+	S.reset();
+	S.add((const char*)n[0].c_str(), n[0].size());
+	btring sha1 = S.calculate();
+	btring sha1_h = Hex::encode(sha1, false);
+	NAPASSERT(sha1_h == n[1]);
+	S.reset();
+	S.add((const char*)n[0].c_str(), n[0].size());
+	sha1 = S.calculate();
+	sha1_h = Hex::encode(sha1, false);
+	NAPASSERT(sha1_h == n[1]);
+	return true;
 }
 
 bool aes_128_ecb(vector<string>& n){
@@ -173,10 +198,18 @@ bool json(vector<string>& n){
 
 bool md5(vector<string>& n) {
 	MD5 md5;
+	md5.add("nouse");
+	md5.reset();
 	md5.add(n[0].c_str(), n[0].size());
-	btring result = md5.calculator();
+	btring result = md5.calculate();
 	result = Hex::encode(result, false);
-	return (result == n[1]);
+	NAPASSERT(result == n[1]);
+	md5.reset();
+	md5.add(n[0].c_str(), n[0].size());
+	result = md5.calculate();
+	result = Hex::encode(result, false);
+	NAPASSERT(result == n[1]);
+	return true;
 }
 
 
@@ -188,11 +221,14 @@ int main() {
 	TEST("AES-128-ECB", aes_128_ecb);
 	TEST("BASE64", base64);
 	TEST("SHA256", sha256);
+	TEST("SHA1", sha1);
 	TEST("JSON", json);
+	TEST("MD5", md5);
 	TEST("MD5", md5);
 
 	RUN();
 	PRINTRESULT();
+
 
 	return 0;
 }
