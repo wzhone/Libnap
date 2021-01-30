@@ -1,4 +1,4 @@
-name: UBUNTU
+name: Ubuntu
 
 on:
   push:
