@@ -3,7 +3,7 @@ LIBNAP
 
 A Cross-Platform **LIB**rary of **N**etwork **AP**plication tools
 
-![ubuntu](https://github.com/wzhone/libnap/workflows/UBUNTU/badge.svg)
+![Ubuntu](https://github.com/wzhone/libnap/workflows/Ubuntu/badge.svg)
 ![Windows](https://github.com/wzhone/libnap/workflows/Windows/badge.svg)
 
 <br/>
