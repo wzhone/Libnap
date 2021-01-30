@@ -15,6 +15,15 @@ uint32_t mhash(const char* str, uint32_t len){
 	return hash;
 }
 
+#define REVERSE32(n) \
+	((((uint32_t)(n) & 0xff000000) >> 24) | \
+	(((uint32_t)(n) & 0x00ff0000) >> 8) |  \
+	(((uint32_t)(n) & 0x0000ff00) << 8) |  \
+	(((uint32_t)(n) & 0x000000ff) << 24))
+
+
+
+
 ///////----------------sha256
 const uint32_t sha256_init[] = {
 	0x6a09e667UL,0xbb67ae85UL,0x3c6ef372UL,0xa54ff53aUL,
@@ -429,7 +438,13 @@ SHA1::SHA1(){
 btring SHA1::calculate(){
 	uint64_t length = _round * 64ULL + _b_buf_len;
 	length *= 8ULL;
-	length = htonll(length);
+
+	uint32_t h = length >> 32;
+	uint32_t l = (uint32_t)length;
+	h = REVERSE32(h);
+	l = REVERSE32(l);
+	length = (uint64_t)l << 32;
+	length |= (uint64_t)h;
 
 	uint32_t padding = 0;
 	if (_b_buf_len < 56) {
@@ -442,11 +457,11 @@ btring SHA1::calculate(){
 	this->add((const char*)_PADDING, padding);
 	this->add((const char*)&length, 8);
 
-	_h[0] = htonl(_h[0]);
-	_h[1] = htonl(_h[1]);
-	_h[2] = htonl(_h[2]);
-	_h[3] = htonl(_h[3]);
-	_h[4] = htonl(_h[4]);
+	_h[0] = REVERSE32(_h[0]);
+	_h[1] = REVERSE32(_h[1]);
+	_h[2] = REVERSE32(_h[2]);
+	_h[3] = REVERSE32(_h[3]);
+	_h[4] = REVERSE32(_h[4]);
 
 	return btring(_h, 20);
 }
