@@ -224,7 +224,6 @@ int main() {
 	TEST("SHA1", sha1);
 	TEST("JSON", json);
 	TEST("MD5", md5);
-	TEST("MD5", md5);
 
 	RUN();
 	PRINTRESULT();
