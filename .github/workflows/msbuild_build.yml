@@ -1,4 +1,4 @@
-name: MSBuild
+name: Windows
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       
-      run: 
+      run: |
         cd .\win
         msbuild ./libnap.sln -p:Configuration=Debug -p:Platform=x86
         ..\output\vstemp\test\x86\Debug\test.exe
