@@ -140,8 +140,8 @@ bool NapTest::test(){
 
 		case_result.caseID = i + 1;
 		case_result.pass = ret;
-		long long retime = duration_cast<microseconds>(end - start).count();
-		case_result.time = ((double)retime) / 1000;
+		long long retime = duration_cast<nanoseconds>(end - start).count();
+		case_result.time = ((double)retime) / 1000000;
 
 		if (!ret) fret = false;
 	}
@@ -151,8 +151,6 @@ bool NapTest::test(){
 
 void NapTest::print(){
 	cout << "Test case item : " << this->casename <<endl;
-	cout.setf(ios::fixed);
-	cout.precision(3);
 
 	for (int i = 0; i < _num; i++) {
 		auto& data = this->_case_result[i];

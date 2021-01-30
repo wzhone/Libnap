@@ -28,7 +28,34 @@ private:
 
 };
 
+//According to RFC1321
+class MD5{
+public:
+	
 
+	MD5();
+
+	btring calculator();
+	void add(const char* data, size_t len);
+	void add(btring data);
+
+private:
+
+	uint32_t _md_buf[4];
+
+	uint8_t _block_buffer[64] = {0};
+	uint32_t _block_buffer_len = 0;
+
+	void _md5_transform();
+	uint32_t _round = 0;
+
+
+	void byte2dword(uint32_t* output, uint8_t* input, UINT length);
+	void dword2byte(uint8_t* output, uint32_t* input, UINT length);
+
+
+
+};
 
 
 _NAP_END

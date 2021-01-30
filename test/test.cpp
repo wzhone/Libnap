@@ -171,6 +171,15 @@ bool json(vector<string>& n){
 	}
 }
 
+bool md5(vector<string>& n) {
+	MD5 md5;
+	md5.add(n[0].c_str(), n[0].size());
+	btring result = md5.calculator();
+	result = Hex::encode(result, false);
+	return (result == n[1]);
+}
+
+
 int main() {
 	assert(btring_test());
 	assert(net_test());
@@ -180,8 +189,10 @@ int main() {
 	TEST("BASE64", base64);
 	TEST("SHA256", sha256);
 	TEST("JSON", json);
+	TEST("MD5", md5);
 
 	RUN();
 	PRINTRESULT();
+
 	return 0;
 }

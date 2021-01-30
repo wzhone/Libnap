@@ -45,12 +45,12 @@ Aes aes = Aes::cipher(
 /*
 	加密
 */
-binstream res = aes.encode(plaintext, strlen(plaintext));
+btring res = aes.encode(plaintext, strlen(plaintext));
 
 /*
 	解密
 */
-binstream decrypted;
+btring decrypted;
 aes.decode((const char*)res.str(), res.size(), decrypted);
 cout << decrypted;
 ```
@@ -77,12 +77,12 @@ Aes aes = Aes::cipher(
 /*
 	加密
 */
-binstream res = aes.encode(plaintext, strlen(plaintext));
+btring res = aes.encode(plaintext, strlen(plaintext));
 
 /*
 	解密
 */
-binstream decrypted;
+btring decrypted;
 aes.decode((const char*)res.str(), res.size(), decrypted);
 cout << decrypted;
 ```

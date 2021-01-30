@@ -7,15 +7,17 @@ A Cross-Platform **LIB**rary of **N**etwork **AP**plication tools
 
 ------
 
-<h3 align = "center"><a href="./doc/nap.md">LIBNAP 使用文档</a></h3>
+<h3 align = "center"><a href="./doc/nap.md">LIBNAP Document</a></h3>
 
 ------
 
 <br/>
 
-## 1. 构建和安装
+## 1. BUILD
 
-### Linux  (Make)
+<br/>
+
+### Make (Linux)
 ------
 ```bash
 $ git clone https://github.com/staticn/libnap.git
@@ -24,12 +26,10 @@ $ make
 $ make install
 ```
 
-**如果编译成功，项目目录下output文件夹里会有静态链接库文件**
-
 <br/>
 
 
-### Windows  (Visual Studio)
+### Visual Studio (Windows)
 ------
 ```powershell
 $ git clone https://github.com/staticn/libnap.git
@@ -37,14 +37,20 @@ $ cd ./libnap/win
 $ ./libnap.sln
 ```
 
-**如果编译成功，则项目目录下的output文件夹将具有静态链接库文件和头文件。**
-
 <br/>
 <br/>
 
-## 2. 其他内容
+## 2. INSTALLATION
 
-####  在Linux中，可以使用以下make命令根据不同需求进行编译
+编译成功后，在output文件夹下，会有需要的静态库文件和头文件。
+
+<br/>
+
+## 3. Other content 
+
+<br/>
+
+ **在Linux中，可以使用以下make命令根据不同需求进行编译**
 
 ------
 ```bash
@@ -58,7 +64,7 @@ make fast : 启用多核快速安静编译
 
 <br/>
 
-####  平台要求
+##  4. Platform requirements 
 ------
 
 ##### Windows

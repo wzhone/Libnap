@@ -155,9 +155,10 @@ std::string btring::toStdString()const {
 
 
 btring::~btring(){
-	if (content)
+	if (content != nullptr) {
 		delete[] content;
-	content = nullptr;
+		content = nullptr;
+	}	
 }
 
 void btring::_append(const uint8_t* con, size_t _length){

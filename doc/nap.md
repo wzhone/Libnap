@@ -28,7 +28,7 @@
 
 #### [AES](./aes.md)
 
-#### [Binstream](./binstream.md)
+#### [Btring](./btring.md)
 
 #### [JSON](./json.md)
 
