@@ -368,7 +368,7 @@ void MD5::_md5_transform(){
 	this->_md_buf[3] += d;
 }
 
-void MD5::byte2dword(uint32_t* output, uint8_t* input, UINT length){
+void MD5::byte2dword(uint32_t* output, uint8_t* input, uint32_t length){
 	assert(length % 4 == 0);
 	for (uint32_t i = 0, j = 0; j < length; i++, j += 4){
 		output[i] = (uint32_t)input[j] |
@@ -378,7 +378,7 @@ void MD5::byte2dword(uint32_t* output, uint8_t* input, UINT length){
 	}
 }
 
-void MD5::dword2byte(uint8_t* output, uint32_t* input, UINT length){
+void MD5::dword2byte(uint8_t* output, uint32_t* input, uint32_t length){
 	assert(length % 4 == 0);
 	for (uint32_t i = 0, j = 0; j < length; i++, j += 4){
 		output[j] = (uint8_t)(input[i] & 0xff);

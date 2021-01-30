@@ -50,8 +50,8 @@ private:
 	uint32_t _round = 0;
 
 
-	void byte2dword(uint32_t* output, uint8_t* input, UINT length);
-	void dword2byte(uint8_t* output, uint32_t* input, UINT length);
+	void byte2dword(uint32_t* output, uint8_t* input, uint32_t length);
+	void dword2byte(uint8_t* output, uint32_t* input, uint32_t length);
 
 
 
