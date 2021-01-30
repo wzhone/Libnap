@@ -1,0 +1,31 @@
+name: MSBuild
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: .
+
+  # Configuration type to build.
+  # You can convert this to a build matrix if you need coverage of multiple configuration types.
+  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  winbuild:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: microsoft/setup-msbuild@v1
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      
+      run: 
+        cd .\win
+        msbuild ./libnap.sln -p:Configuration=Debug -p:Platform=x86
+        ..\output\vstemp\test\x86\Debug\test.exe
+      
+
