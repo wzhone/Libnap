@@ -1,4 +1,4 @@
-name: BUILD
+name: UBUNTU
 
 on:
   push:
