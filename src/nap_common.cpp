@@ -24,14 +24,14 @@ NapException::NapException(const char* _message){
 }
 
 NapException::NapException(const NapException& _other)noexcept {
-	this->_new_data(_other._data, _other._len);
+	this->_new_data(_other._data, (int)_other._len);
 }
 
 NapException& NapException::operator=(const NapException& _other) noexcept{
 	if (this == &_other) {
 		return *this;
 	}
-	this->_new_data(_other._data, _other._len);
+	this->_new_data(_other._data, (int)_other._len);
 	return *this;
 }
 
@@ -52,9 +52,9 @@ const char* NapException::what() const noexcept{
 }
 
 void NapException::_new_data(const char* str, int _ll) noexcept {
-	int len = 0;
+	size_t len = 0;
 	if (_ll == -1)
-		len = strlen(str) + 1;
+		len = strlen(str) + 1ULL;
 	else
 		len = _ll;
 	

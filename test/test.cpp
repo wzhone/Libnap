@@ -1,9 +1,12 @@
 #include "libnap.h"
 #include "naptest.h"
-
-
 using namespace std;
 using namespace nap;
+
+#ifdef WINDOWS
+	#pragma warning(disable:4267)
+	#pragma warning(disable:4819)
+#endif
 
 
 bool btring_test() {
@@ -87,37 +90,81 @@ bool base64(vector<string>& n) {
 
 }
 
-bool aes_128_cbc(vector<string>& n) {
-	Aes aes = Aes::cipher(n[1].c_str(),
-		AesPadding::PKCS5, AesType::CBC, (char*)n[2].c_str());
+bool aes_cbc(vector<string>& n) {
+	Aes aes128(Aes::Padding::PKCS5,
+		AesKey::Type::T_128,
+		Aes::Type::CBC, n[1].c_str(), (char*)n[4].c_str());
+	Aes aes192(Aes::Padding::PKCS5,
+		AesKey::Type::T_192,
+		Aes::Type::CBC, n[2].c_str(), (char*)n[4].c_str());
+	Aes aes256(Aes::Padding::PKCS5,
+		AesKey::Type::T_256,
+		Aes::Type::CBC, n[3].c_str(), (char*)n[4].c_str());
 	//加密过程
-	btring res = aes.encode((const char*)n[0].c_str(), n[0].size());
-	btring res_hex = Hex::encode(res);
-	if (!(res_hex == n[3])) 
-		return false;
+	btring res128 = aes128.encode((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	btring res192 = aes192.encode((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	btring res256 = aes256.encode((const char*)n[0].c_str(), (uint32_t)n[0].size());
+
+	if (!(Base64::encode(res128) == n[5]))  return false;
+	if (!(Base64::encode(res192) == n[6])) return false;
+	if (!(Base64::encode(res256) == n[7]))  return false;
+
 	//解密过程
-	btring res2;
-	btring n3(n[3]);
-	btring cipher = Hex::decode(n3);
-	aes.decode((const char*)cipher.str(), cipher.size(), res2);
-	if (!(res2 == n[0])) 
-		return false;
+	btring r_aes128;
+	btring r_aes192;
+	btring r_aes256;
+	aes128.decode(res128, r_aes128);
+	aes192.decode(res192, r_aes192);
+	aes256.decode(res256, r_aes256);
+
+	if (!(r_aes128 == n[0])) return false;
+	if (!(r_aes192 == n[0])) return false;
+	if (!(r_aes256 == n[0])) return false;
+
+	return true;
+}
+
+bool aes_ecb(vector<string>& n) {
+	Aes aes128(Aes::Padding::PKCS5,AesKey::Type::T_128,Aes::Type::ECB, n[1].c_str());
+	Aes aes192(Aes::Padding::PKCS5,AesKey::Type::T_192,Aes::Type::ECB, n[2].c_str());
+	Aes aes256(Aes::Padding::PKCS5,AesKey::Type::T_256,Aes::Type::ECB, n[3].c_str());
+	//加密过程
+	btring res128 = aes128.encode((const char*)n[0].c_str(), n[0].size());
+	btring res192 = aes192.encode((const char*)n[0].c_str(), n[0].size());
+	btring res256 = aes256.encode((const char*)n[0].c_str(), n[0].size());
+
+	if (!(Base64::encode(res128) == n[4]))  return false;
+	if (!(Base64::encode(res192) == n[5])) return false;
+	if (!(Base64::encode(res256) == n[6]))  return false;
+
+	//解密过程
+	btring r_aes128;
+	btring r_aes192;
+	btring r_aes256;
+	aes128.decode(res128, r_aes128);
+	aes192.decode(res192, r_aes192);
+	aes256.decode(res256, r_aes256);
+
+	if (!(r_aes128 == n[0])) return false;
+	if (!(r_aes192 == n[0])) return false;
+	if (!(r_aes256 == n[0])) return false;
+
 	return true;
 }
 
 bool sha256(vector<string>& n) {
-	SHA256 S;
-	S.add("nouse");
-	S.reset();
-	S.add((const char*)n[0].c_str(), n[0].size());
-	S.add((const char*)n[1].c_str(), n[1].size());
-	btring sha256 = S.calculate();
+	SHA256 s;
+	s.add("nouse");
+	s.reset();
+	s.add((const char*)n[0].c_str(), n[0].size());
+	s.add((const char*)n[1].c_str(), n[1].size());
+	btring sha256 = s.calculate();
 	btring sha256_hex = Hex::encode(sha256, false);
 	NAPASSERT(sha256_hex == n[2]);
-	S.reset();
-	S.add((const char*)n[0].c_str(), n[0].size());
-	S.add((const char*)n[1].c_str(), n[1].size());
-	sha256 = S.calculate();
+	s.reset();
+	s.add((const char*)n[0].c_str(), n[0].size());
+	s.add((const char*)n[1].c_str(), n[1].size());
+	sha256 = s.calculate();
 	sha256_hex = Hex::encode(sha256, false);
 	NAPASSERT(sha256_hex == n[2]);
 	return true;
@@ -137,24 +184,6 @@ bool sha1(vector<string>& n) {
 	sha1_h = Hex::encode(sha1, false);
 	NAPASSERT(sha1_h == n[1]);
 	return true;
-}
-
-bool aes_128_ecb(vector<string>& n){
-
-	Aes aes = Aes::cipher((char*)n[1].c_str(),
-		AesPadding::PKCS5, AesType::ECB);
-	//加密过程
-	btring res = aes.encode((const char*)n[0].c_str(), n[0].size());
-	btring res_hex = Hex::encode(res);
-	if (!(res_hex == n[2])) return false;
-	//解密过程
-	btring res2;
-	btring n2 = n[2];
-	btring cipher = Hex::decode(n2);
-	aes.decode((const char*)cipher.str(), cipher.size(), res2);
-	if (!(res2 == n[0])) return false;
-	return true;
-
 }
 
 bool json(vector<string>& n){
@@ -217,8 +246,8 @@ int main() {
 	assert(btring_test());
 	assert(net_test());
 
-	TEST("AES-128-CBC", aes_128_cbc);
-	TEST("AES-128-ECB", aes_128_ecb);
+	TEST("AES-CBC", aes_cbc);
+	TEST("AES-ECB", aes_ecb);
 	TEST("BASE64", base64);
 	TEST("SHA256", sha256);
 	TEST("SHA1", sha1);
@@ -228,6 +257,6 @@ int main() {
 	RUN();
 	PRINTRESULT();
 
-
 	return 0;
 }
+

@@ -103,7 +103,7 @@ btring SHA256::calculate(){
 		); //length of 32Byte
 }
 
-void SHA256::add(const char* data, size_t len){
+void SHA256::add(const char* data, uint32_t len){
 		//计算增加进来的sha256值
 		//如果多余64就先缓存起来
 	while (len > 0) {
@@ -125,7 +125,7 @@ void SHA256::add(const char* data, size_t len){
 }
 
 void SHA256::add(btring data){
-	this->add((const char*)data.str(), data.size());
+	this->add((const char*)data.str(), (uint32_t)data.size());
 }
 
 void SHA256::reset(){
@@ -276,7 +276,7 @@ btring MD5::calculate(){
 void MD5::add(btring _data){
 	const char* data = (const char*)_data.str();
 
-	this->add(data, _data.size());
+	this->add(data, (uint32_t)_data.size());
 }
 
 void MD5::reset(){
@@ -290,7 +290,7 @@ void MD5::reset(){
 	this->_round = 0;
 }
 
-void MD5::add(const char* data, size_t len){
+void MD5::add(const char* data, uint32_t len){
 	while (true) {
 		if (_block_buffer_len + len < 64) {
 			memcpy(_block_buffer + _block_buffer_len, data, len);
@@ -448,11 +448,11 @@ btring SHA1::calculate(){
 
 	uint32_t padding = 0;
 	if (_b_buf_len < 56) {
-		padding = 56 - _b_buf_len;
+		padding = 56 - (uint32_t)_b_buf_len;
 	}else if (_b_buf_len == 56) {
 		padding = 64;
 	}else {
-		padding = 64 - (_b_buf_len - 56);
+		padding = 64 - ((uint32_t)_b_buf_len - 56);
 	}
 	this->add((const char*)_PADDING, padding);
 	this->add((const char*)&length, 8);
@@ -466,14 +466,14 @@ btring SHA1::calculate(){
 	return btring(_h, 20);
 }
 
-void SHA1::add(const char* data, size_t len) {
+void SHA1::add(const char* data, uint32_t len) {
 	while (true) {
 		if (_b_buf_len + len < 64) {
 			memcpy(_b_buf + _b_buf_len, data, len);
 			_b_buf_len += len;
 			return;
 		}
-		int need = 64 - _b_buf_len;
+		int need = 64 - (uint32_t)_b_buf_len;
 		memcpy(_b_buf + _b_buf_len, data, need);
 		len -= need;
 		data += need;
@@ -484,7 +484,7 @@ void SHA1::add(const char* data, size_t len) {
 
 void SHA1::add(btring _data){
 	const char* data = (const char*)_data.str();
-	this->add(data, _data.size());
+	this->add(data, (uint32_t)_data.size());
 }
 
 void SHA1::reset(){

@@ -60,7 +60,7 @@ NapTest::NapTest(const char* name, callback cb):
 	size_t now_pos = ftell(fp);
 	fseek(fp, 0, SEEK_END);
 	size_t size = ftell(fp) - now_pos;
-	fseek(fp, now_pos, SEEK_SET);
+	fseek(fp, (long)now_pos, SEEK_SET);
 
 	this->_buffer = new char[size+1];
 	this->_buffer_size = size;
@@ -173,7 +173,7 @@ void NapTest::_init() {
 	}
 
 	//Calculate location
-	int pos = 0;
+	size_t pos = 0;
 	for (int i = 0; i < this->_num; i++) {
 		auto& now_vector = _case_pointer[i];
 

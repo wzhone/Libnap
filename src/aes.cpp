@@ -5,10 +5,10 @@ _NAP_BEGIN
 
 #define INT32(a,b,c,d) ((((uint32_t)(a))<<24)|(((uint32_t)(b))<<16)|(((uint32_t)(c))<<8)|((uint32_t)(d)))
 
-
-static const uint32_t aes_rcon[10] = {
-		0x01000000UL, 0x02000000UL, 0x04000000UL, 0x08000000UL, 0x10000000UL,
-		0x20000000UL, 0x40000000UL, 0x80000000UL, 0x1B000000UL, 0x36000000UL
+static const uint32_t aes_rcon[11] = {
+		0x01000000UL,0x01000000UL, 0x02000000UL, 0x04000000UL, 0x08000000UL,
+		0x10000000UL,0x20000000UL, 0x40000000UL, 0x80000000UL, 0x1B000000UL, 
+		0x36000000UL
 };
 
 const static uint8_t aes_s_box[256] = {
@@ -62,33 +62,60 @@ static const uint8_t aes_inv_3mt[4][4] ={
 0x0D, 0x09, 0x0E, 0x0B,
 0x0B, 0x0D, 0x09, 0x0E};
 
-Aes Aes::cipher(Key key, AesPadding p, AesType t, Key iv){
-	Aes aes(p,t);
-	aes.setKey((uint8_t*)key);
+Aes::Aes(Padding p, AesKey::Type kp, Type t, Key key, Key iv)
+:_padd(p), _type(t) , _key(key,kp){
+
 	if (iv != nullptr) {
-		aes.iv = new uint8_t[16];
-		memcpy(aes.iv, iv, 16);
+		_iv = new uint8_t[16];
+		memcpy(_iv, iv, 16);
 	}
-	return std::move(aes);
 }
 
-btring Aes::encode(const char* plaintext, int len){
-	int l_space = (len / 16) * 16 + 16;
+Aes::Aes(Aes&& old) noexcept
+: _padd(old._padd), _type(old._type), _key(std::move(old._key)){
+
+	if (old._iv != nullptr) {
+		_iv = old._iv;
+		old._iv = nullptr;
+	}
+}
+
+Aes::Aes(const Aes& old)
+: _padd(old._padd), _type(old._type), _key(old._key) {
+
+	if (old._iv != nullptr) {
+		this->_iv = new uint8_t[16];
+		memcpy(_iv, old._iv, 16);
+	} else {
+		this->_iv = nullptr;
+	}
+
+}
+
+Aes::~Aes(){
+	delete _iv;
+}
+
+btring Aes::encode(const btring& b){
+	return encode((const char*)b.str(), (uint32_t)b.size());
+}
+btring Aes::encode(const char* plaintext, uint32_t len){
+	uint32_t l_space = (len / 16) * 16 + 16;
 	uint8_t* space = new uint8_t[l_space];
 	memcpy(space, plaintext, len);
-	uint8_t filllength = l_space - len;
+	uint32_t filllength = l_space - len;
 	
-	switch (this->padd) {
-	case AesPadding::PKCS5:
-	case AesPadding::PKCS7:
+	switch (this->_padd) {
+	case Aes::Padding::PKCS5:
+	case Aes::Padding::PKCS7:
 		memset(space + len, filllength, filllength);
 		break;
-	case AesPadding::ISO10126:
+	case Aes::Padding::ISO10126:
 		space[l_space - 1] = filllength;
-		for (int i = len; i < l_space - 1; i++)
+		for (uint32_t i = len; i < l_space - 1; i++)
 			space[i] = (uint8_t)random<uint16_t>(0,255); //c++ random not support uint8_t
 		break;
-	case AesPadding::Zeros:
+	case Aes::Padding::Zeros:
 		memset(space + len, 0x00, filllength);
 		break;
 	default:
@@ -98,30 +125,27 @@ btring Aes::encode(const char* plaintext, int len){
 
 	//分组并加密
 	uint8_t matrix4x4[16];
-	if (type == AesType::ECB) {
-
-		for (int i = 0; i < l_space / 16; i++) {
-			char2matrix4x4(matrix4x4, space + i * 16);
+	if (_type == Aes::Type::ECB) {
+		for (uint32_t i = 0; i < l_space / 16; i++) {
+			AesFun::char2matrix4x4(matrix4x4, space + (i * 16));
 			_16encode(matrix4x4);
-			char2matrix4x4(space + i * 16, matrix4x4);
+			AesFun::char2matrix4x4(space + (i * 16), matrix4x4);
 		}
-	}else if (type == AesType::CBC) {
+	}else if (_type == Aes::Type::CBC) {
 		const uint8_t* _piv = 
 			(const uint8_t*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+		if (_iv != nullptr)
+			_piv = _iv;
 
-		if (iv != nullptr)
-			_piv = iv;
-
-		for (int i = 0; i < l_space / 16; i++){
+		for (uint32_t i = 0; i < l_space / 16; i++){
 			for (int n = 0;n < 16; n++)
-				*(space + i * 16 +n) ^= _piv[n];
-			char2matrix4x4(matrix4x4, space + i * 16);
+				*(space + (i * 16) +n) ^= _piv[n];
+			AesFun::char2matrix4x4(matrix4x4, space + (i * 16));
 			_16encode(matrix4x4);
-			char2matrix4x4(space + i * 16, matrix4x4);
-			_piv = space + i * 16;
+			AesFun::char2matrix4x4(space + (i * 16), matrix4x4);
+			_piv = space + (i * 16);
 		}
-	}
-	else {
+	}else {
 		assert(false);
 	}
 
@@ -130,35 +154,39 @@ btring Aes::encode(const char* plaintext, int len){
 	return ret;
 }
 
-bool Aes::decode(const char* ciphertext, int len, btring& b) {
+
+bool Aes::decode(const btring& b, btring& n){
+	return decode((const char*)b.str(), (uint32_t)b.size(), n);
+}
+bool Aes::decode(const char* ciphertext, uint32_t len, btring& b) {
 	uint8_t* buffer = new uint8_t[len];
 	
 	memcpy(buffer, ciphertext, len);
 	
 	//分组并解密
 	uint8_t matrix4x4[16];
-	if (type == AesType::ECB) {
+	if (_type == Aes::Type::ECB) {
 		
-		for (int i = 0; i < len / 16; i++) {
-			char2matrix4x4(matrix4x4, buffer + i * 16);
+		for (uint32_t i = 0; i < len / 16; i++) {
+			AesFun::char2matrix4x4(matrix4x4, buffer + i * 16);
 			_16decode(matrix4x4);
-			char2matrix4x4(buffer + i * 16, matrix4x4);
+			AesFun::char2matrix4x4(buffer + i * 16, matrix4x4);
 		}
 	}
-	else if (type == AesType::CBC) {
+	else if (_type == Aes::Type::CBC) {
 
 		uint8_t* buffer2 = new uint8_t[len];
 
 		const uint8_t* _piv =
 			(const uint8_t*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
-		if (iv != nullptr)
-			_piv = iv;
+		if (_iv != nullptr)
+			_piv = _iv;
 
-		for (int i = 0; i < len / 16; i++) {
-			char2matrix4x4(matrix4x4, buffer + i * 16);
+		for (uint32_t i = 0; i < len / 16; i++) {
+			AesFun::char2matrix4x4(matrix4x4, buffer + i * 16);
 			_16decode(matrix4x4);
-			char2matrix4x4(buffer2 + i * 16, matrix4x4);
+			AesFun::char2matrix4x4(buffer2 + i * 16, matrix4x4);
 
 			for (int n = 0; n < 16; n++)
 				*(buffer2 + i * 16 + n) ^= _piv[n];
@@ -167,75 +195,70 @@ bool Aes::decode(const char* ciphertext, int len, btring& b) {
 
 		delete[] buffer;
 		buffer = buffer2;
-	}
-	else {
+	}else {
 		assert(false);
 	}
 
 	//根据填充去除填充
 	int real_length = len;
-	switch (this->padd) {
-	case AesPadding::PKCS5:
-	case AesPadding::PKCS7:
-	case AesPadding::ISO10126:
+	switch (this->_padd) {
+	case Aes::Padding::PKCS5:
+	case Aes::Padding::PKCS7:
+	case Aes::Padding::ISO10126:
 		real_length -= buffer[len - 1];
-	case AesPadding::Zeros:
+		break;
+	case Aes::Padding::Zeros:
 		//0填充无法确定数量，无法去除
 		break;
 	default:
-		//not support padding mode
-		assert(false);
+		assert(false);//not support padding mode
 	};
 
 	if (buffer[len - 1] > 16) {
 		//解密失败，因为填充最大16字节
 		delete[] buffer;
 		return false;
-	}
-	else {
+	}else {
 		b.append(buffer, real_length);
 		delete[] buffer;
 		return true;
 	}
 }
 
-
-void Aes::setKey(uint8_t k[16]){
-	keyexpan((uint8_t*)k);
-}
-
 void Aes::_16encode(Matrix4x4 matrix4x4){
-	uint32_t* rk = keyse;
-	addroundkey(matrix4x4, rk);
-	for (int j = 1; j < 10; ++j) {
+	uint32_t* rk = this->_key.getKey();
+	AesFun::addroundkey(matrix4x4, rk);
+	for (uint32_t j = 1; j < this->_key.round(); ++j) {
 		rk += 4;
-		subbytes(matrix4x4);   // 字节替换
-		shiftrows(matrix4x4);  // 行移位
-		mixcolumns(matrix4x4); // 列混合
-		addroundkey(matrix4x4, rk); // 轮秘钥加
+		AesFun::subbytes(matrix4x4);   // 字节替换
+		AesFun::shiftrows(matrix4x4);  // 行移位
+		AesFun::mixcolumns(matrix4x4); // 列混合
+		AesFun::addroundkey(matrix4x4, rk); // 轮秘钥加
 	}
-	subbytes(matrix4x4);    // 字节替换
-	shiftrows(matrix4x4);  // 行移位
+	AesFun::subbytes(matrix4x4);    // 字节替换
+	AesFun::shiftrows(matrix4x4);  // 行移位
 	// 此处不进行列混合
-	addroundkey(matrix4x4, rk + 4);
-}
-void Aes::_16decode(Matrix4x4 matrix4x4){
-	uint32_t* rk = keysd;
-	addroundkey(matrix4x4, rk);
-	for (int j = 1; j < 10; ++j) {
-		rk += 4;
-		invshiftrows(matrix4x4);  // 行移位
-		invsubbytes(matrix4x4);   // 字节替换
-		addroundkey(matrix4x4, rk); // 轮秘钥加
-		invmixcolumns(matrix4x4); // 列混合
-	}
-	invsubbytes(matrix4x4);    // 字节替换
-	invshiftrows(matrix4x4);  // 行移位
-	// 此处不进行列混合
-	addroundkey(matrix4x4, rk + 4);
+	AesFun::addroundkey(matrix4x4, rk + 4);
 }
 
-void Aes::char2matrix4x4(Matrix4x4 out,const uint8_t* in){
+void Aes::_16decode(Matrix4x4 matrix4x4){
+	uint32_t* rk = this->_key.getDKey();
+	AesFun::addroundkey(matrix4x4, rk);
+	for (uint32_t j = 1; j < this->_key.round(); ++j) {
+		rk += 4;
+		AesFun::invshiftrows(matrix4x4);  // 行移位
+		AesFun::invsubbytes(matrix4x4);   // 字节替换
+		AesFun::addroundkey(matrix4x4, rk); // 轮秘钥加
+		AesFun::invmixcolumns(matrix4x4); // 列混合
+	}
+	AesFun::invsubbytes(matrix4x4);    // 字节替换
+	AesFun::invshiftrows(matrix4x4);  // 行移位
+	// 此处不进行列混合
+	AesFun::addroundkey(matrix4x4, rk + 4);
+}
+
+
+void AesFun::char2matrix4x4(Matrix4x4 out,const uint8_t* in){
 	assert(out != in); //输入输出不允许使用统同一空间
 	for (int i = 0; i < 4; ++i) {
 		for (int j = 0; j < 4; ++j) {
@@ -244,7 +267,7 @@ void Aes::char2matrix4x4(Matrix4x4 out,const uint8_t* in){
 		}
 	}
 }
-void Aes::matrix4x42char(uint8_t* out,const Matrix4x4 in){
+void AesFun::matrix4x42char(uint8_t* out,const Matrix4x4 in){
 	assert(out != in);//输入输出不允许使用统同一空间
 	for (int i = 0; i < 4; ++i) {
 		for (int j = 0; j < 4; ++j) {
@@ -254,70 +277,20 @@ void Aes::matrix4x42char(uint8_t* out,const Matrix4x4 in){
 	}
 }
 
-//生成44个4byte密钥    (10+1) x (4 x 4)
-void Aes::keyexpan(uint8_t* key){
-	//copy keysw[0 - 3]
-	for (int i = 0; i < 4; i++) {
-		int t = i * 4;
-		keyse[i] = INT32(key[t + 0], key[t + 1], key[t + 2], key[t + 3]);
-	}
-
-	//循环左移一位然后字节替换
-	auto mix = [](uint32_t n)-> uint32_t {
-		uint32_t ret=0,_ret;
-		uint8_t temp = (n & 0xff000000) >> 24;
-		n <<= 8;
-		_ret =  n | temp;
-
-		ret |= aes_s_box[(_ret & 0xff000000) >> 24];
-		ret <<= 8;
-		ret |= aes_s_box[(_ret & 0x00ff0000) >> 16];
-		ret <<= 8;
-		ret |= aes_s_box[(_ret & 0x0000ff00) >> 8];
-		ret <<= 8;
-		ret |= aes_s_box[(_ret & 0x000000ff)];
-		
-		return ret;
-	};
-
-
-	uint32_t* w = keyse;
-	for (int i = 0; i < 10; i++) {
-		w[4] = w[0] ^ mix(w[3]) ^ aes_rcon[i];
-		w[5] = w[1] ^ w[4];
-		w[6] = w[2] ^ w[5];
-		w[7] = w[3] ^ w[6];
-		w += 4;
-	}
-
-	//计算解密密钥
-	//即d[0-3]=e[41-44], d[4-7]=e[37-40]... d[41-44]=e[0-3]
-	uint32_t* v = keysd;
-	w = keyse + 44 - 4;
-	for (int j = 0; j < 11; j++) {
-		for (int i = 0; i < 4; i++)
-			v[i] = w[i];
-		w -= 4;
-		v += 4;
-	}
-
-
-}
-
 //1
-void Aes::subbytes(uint8_t* matrix4x4){//通过S-BOX 进行非线性替代
+void AesFun::subbytes(uint8_t* matrix4x4){//通过S-BOX 进行非线性替代
 	for (int i = 0; i < 16; i++)
 		matrix4x4[i] =
 			aes_s_box[matrix4x4[i]];
 }
-void Aes::invsubbytes(uint8_t* matrix4x4){
+void AesFun::invsubbytes(uint8_t* matrix4x4){
 	for (int i = 0; i < 16; i++)
 		matrix4x4[i] =
 		aes_inv_s_box[matrix4x4[i]];
 }
 
 //2
-void Aes::leftshift(uint8_t* matrix1x4,int b){
+void AesFun::leftshift(uint8_t* matrix1x4,int b){
 	switch (b) {
 	case 1:
 		SWAP(matrix1x4[0], matrix1x4[3]);
@@ -335,7 +308,7 @@ void Aes::leftshift(uint8_t* matrix1x4,int b){
 		break;
 	}
 }
-void Aes::rightshift(uint8_t* matrix1x4,int b){
+void AesFun::rightshift(uint8_t* matrix1x4,int b){
 	switch (b) {
 	case 1:
 		SWAP(matrix1x4[0], matrix1x4[3]);
@@ -353,19 +326,19 @@ void Aes::rightshift(uint8_t* matrix1x4,int b){
 		break;
 	}
 }
-void Aes::shiftrows(uint8_t* matrix4x4){
+void AesFun::shiftrows(uint8_t* matrix4x4){
 	leftshift(matrix4x4+4, 1);
 	leftshift(matrix4x4+8, 2);
 	leftshift(matrix4x4+12, 3);
 }
-void Aes::invshiftrows(uint8_t* matrix4x4) {
+void AesFun::invshiftrows(uint8_t* matrix4x4) {
 	rightshift(matrix4x4 + 4, 1);
 	rightshift(matrix4x4 + 8, 2);
 	rightshift(matrix4x4 + 12, 3);
 }
 
 //3
-uint8_t Aes::g_num(uint8_t u, uint8_t v) {//两字节的伽罗华域乘法运算
+uint8_t AesFun::g_num(uint8_t u, uint8_t v) {//两字节的伽罗华域乘法运算
 	uint8_t p = 0;
 	for (int i = 0; i < 8; i++) {
 		if (u & 0x01) {   
@@ -379,7 +352,7 @@ uint8_t Aes::g_num(uint8_t u, uint8_t v) {//两字节的伽罗华域乘法运算
 	}
 	return p;
 }
-void Aes::mixcolumns(uint8_t* matrix4x4){
+void AesFun::mixcolumns(uint8_t* matrix4x4){
 	uint8_t tmp[4][4] = { {0} };
 	for (int i = 0; i < 16;i++)
 		*((uint8_t*)tmp+i) = matrix4x4[i];
@@ -394,7 +367,7 @@ void Aes::mixcolumns(uint8_t* matrix4x4){
 		}
 	}
 }
-void Aes::invmixcolumns(uint8_t* matrix4x4){
+void AesFun::invmixcolumns(uint8_t* matrix4x4){
 	uint8_t tmp[4][4] = { {0} };
 	for (int i = 0; i < 16; i++)
 		*((uint8_t*)tmp + i) = matrix4x4[i];
@@ -411,7 +384,7 @@ void Aes::invmixcolumns(uint8_t* matrix4x4){
 }
 
 //4
-void Aes::addroundkey(uint8_t* matrix4x4, uint32_t* _4rkey){
+void AesFun::addroundkey(uint8_t* matrix4x4, uint32_t* _4rkey){
 	for (int x = 0; x < 4; x++) {
 		uint32_t key = *_4rkey;
 		matrix4x4[0*4 + x] ^= uint8_t((key & 0xff000000) >> 24);
@@ -422,26 +395,128 @@ void Aes::addroundkey(uint8_t* matrix4x4, uint32_t* _4rkey){
 	}
 }
 
-Aes::Aes(AesPadding p, AesType t) noexcept :
-	padd(p),
-	type(t){
+
+
+///-------------------------------
+
+
+AesKey::AesKey(const char* key, Type _type):type(_type){
+	_array_length = 4 * (round() + 1);
+	_keys_e = new uint32_t[_array_length];
+	_keys_d = new uint32_t[_array_length];
+
+	_key_expansion((const uint8_t*)key);
 }
 
+AesKey::AesKey(AesKey&& old)noexcept :type(old.type) {
+	this->_array_length = old._array_length;
 
-Aes::~Aes(){
-	delete iv;
+	this->_keys_e = old._keys_e;
+	this->_keys_d = old._keys_d;
+	old._keys_e = nullptr;
+	old._keys_d = nullptr;
 }
 
-Aes::Aes(Aes&& old) noexcept  :
-	padd(old.padd),
-	type(old.type) 
-{
-	this->iv = old.iv;
-	old.iv = nullptr;
-	memcpy(keyse, old.keyse, 44 * sizeof(uint32_t));
-	memcpy(keysd, old.keysd, 44*sizeof(uint32_t));
+AesKey::AesKey(const AesKey& old) :type(old.type){
+	uint32_t length = old._array_length;
+
+	this->_keys_e = new uint32_t[length];
+	this->_keys_d = new uint32_t[length];
+	memcpy(this->_keys_e, old._keys_e, sizeof(uint32_t) * length);
+	memcpy(this->_keys_d, old._keys_d, sizeof(uint32_t) * length);
+	this->_array_length = length;
 
 }
+
+AesKey::~AesKey(){
+	if (_keys_e != nullptr) {
+		delete[] _keys_e;
+	}
+	if (_keys_d != nullptr) {
+		delete[] _keys_d;
+	}
+}
+
+uint32_t AesKey::round(){
+	switch (type) {
+	case Type::T_128: return 10;
+	case Type::T_192: return 12;
+	case Type::T_256: return 14;
+	}
+	assert(false);
+	return 0;
+}
+
+void AesKey::_key_expansion(const uint8_t* key){
+
+	const uint32_t Nk = (uint32_t)type; //key length
+	const uint32_t exp_length = _array_length; //Nb (Nr + 1) 
+
+	//Nk = key_length
+
+	/*
+		将密钥按照顺序拷贝进密钥队列里
+		每次拷贝四个字节的密钥进入到一个u32数组里
+	*/
+	for (uint32_t i = 0; i < Nk; i++) {
+		int t = i * 4;
+		_keys_e[i] = INT32(key[t], key[t+1], key[t+2], key[t+3]);
+	}
+
+	auto subword = [](uint32_t v)-> uint32_t {
+		uint8_t* p = (uint8_t*)&v;
+		for (int i = 0; i < 4; i++) {
+			p[i] = aes_s_box[p[i]];
+		}
+		return v;
+	};
+
+	//循环左移8bit然后字节替换
+	auto mix = [subword](uint32_t n)-> uint32_t {
+		uint32_t ret=0,_ret;
+
+		//rotword
+		uint8_t temp = (n & 0xff000000) >> 24;
+		n <<= 8;
+		_ret =  n | temp;
+		ret = subword(_ret);
+		
+		return ret;
+	};
+
+	/*
+		填充其他的空余区域
+		计算密钥
+	*/
+	for (uint32_t i = Nk; i < exp_length; i++) {
+		uint32_t temp = _keys_e[i - 1]; //上一个u32
+		if (i % Nk == 0) {
+			temp = mix(temp) ^ aes_rcon[i / Nk];
+		}else if ((Nk > 6 ) && ((i% Nk) == 4)){
+			temp = subword(temp);
+		}
+		_keys_e[i] = _keys_e[i - Nk] ^ temp;
+		
+	}
+
+
+	//计算解密密钥
+	//即d[0-3]=e[40-43]
+	uint32_t* p_e = _keys_e;
+	uint32_t* p_d = _keys_d + exp_length-4;
+
+	for (uint32_t i = 0 ; i < exp_length; i+=4) {
+		p_d[0] = p_e[0];
+		p_d[1] = p_e[1];
+		p_d[2] = p_e[2];
+		p_d[3] = p_e[3];
+
+
+		p_d-=4;
+		p_e+=4;
+	}
+}
+
 
 
 

@@ -131,8 +131,8 @@ bool JsonNode::remove(btring key){
 bool JsonNode::remove(size_t index){
 	throwTypeException(JsonType::Array);
 	index--;
-	if (index >= this->_values.size() || index < 0) return false;
-	int n = 0;
+	if (index >= this->_values.size()) return false;
+	size_t n = 0;
 	for (auto p = this->_values.begin(); p != this->_values.end(); p++) {
 		if (n == index) {
 			this->_values.erase(p);
@@ -195,6 +195,7 @@ bool JsonParser::parse(btring str) {
 		}
 	}
 	catch (btringException& e) {
+		(void)(e);
 		this->setError(p, 2);
 		return false;
 	}

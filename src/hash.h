@@ -10,7 +10,7 @@ uint32_t mhash(const char* str, uint32_t len);
 class Hash {
 public:
 	Hash() {};
-	virtual void add(const char* data, size_t len) = 0;
+	virtual void add(const char* data, uint32_t len) = 0;
 	virtual void add(btring data) = 0;
 	virtual btring calculate() = 0;
 	virtual void reset() = 0;
@@ -23,9 +23,8 @@ class SHA256 : public Hash {
 public:
 
 	SHA256();
-
 	btring calculate();
-	void add(const char* data, size_t len);
+	void add(const char* data, uint32_t len);
 	void add(btring data);
 	void reset();
 private:
@@ -47,7 +46,7 @@ public:
 	MD5();
 
 	btring calculate();
-	void add(const char* data, size_t len);
+	void add(const char* data, uint32_t len);
 	void add(btring data);
 	void reset();
 
@@ -76,7 +75,7 @@ public:
 
 
 	btring calculate();
-	void add(const char* data, size_t len);
+	void add(const char* data, uint32_t len);
 	void add(btring data);
 	void reset();
 
@@ -87,7 +86,7 @@ private:
 	uint32_t _round = 0;
 
 	uint8_t _b_buf[64] = { 0 };
-	uint32_t _b_buf_len = 0;
+	size_t _b_buf_len = 0;
 
 	uint32_t _h[5];
 
