@@ -62,166 +62,74 @@ static const uint8_t aes_inv_3mt[4][4] ={
 0x0D, 0x09, 0x0E, 0x0B,
 0x0B, 0x0D, 0x09, 0x0E};
 
-Aes::Aes(Padding p, AesKey::Type kp, Type t, Key key, Key iv)
-:_padd(p), _type(t) , _key(key,kp){
 
-	if (iv != nullptr) {
-		_iv = new uint8_t[16];
-		memcpy(_iv, iv, 16);
-	}
+Aes::Aes(Padding p, AesKey::Type kp, Type t, Key key)
+	:_padd(p), _type(t) , _key(key,kp){
+
 }
 
 Aes::Aes(Aes&& old) noexcept
-: _padd(old._padd), _type(old._type), _key(std::move(old._key)){
+	: _padd(old._padd), _type(old._type), _key(std::move(old._key)){
 
-	if (old._iv != nullptr) {
-		_iv = old._iv;
-		old._iv = nullptr;
-	}
 }
 
 Aes::Aes(const Aes& old)
-: _padd(old._padd), _type(old._type), _key(old._key) {
-
-	if (old._iv != nullptr) {
-		this->_iv = new uint8_t[16];
-		memcpy(_iv, old._iv, 16);
-	} else {
-		this->_iv = nullptr;
-	}
+	: _padd(old._padd), _type(old._type), _key(old._key) {
 
 }
 
-Aes::~Aes(){
-	delete _iv;
-}
 
-btring Aes::encode(const btring& b){
-	return encode((const char*)b.str(), (uint32_t)b.size());
+btring Aes::encode(const btring& b, const btring& extra){
+	return encode((const char*)b.str(), (uint32_t)b.size(), extra);
 }
-btring Aes::encode(const char* plaintext, uint32_t len){
-	uint32_t l_space = (len / 16) * 16 + 16;
-	uint8_t* space = new uint8_t[l_space];
-	memcpy(space, plaintext, len);
-	uint32_t filllength = l_space - len;
-	
-	switch (this->_padd) {
-	case Aes::Padding::PKCS5:
-	case Aes::Padding::PKCS7:
-		memset(space + len, filllength, filllength);
-		break;
-	case Aes::Padding::ISO10126:
-		space[l_space - 1] = filllength;
-		for (uint32_t i = len; i < l_space - 1; i++)
-			space[i] = (uint8_t)random<uint16_t>(0,255); //c++ random not support uint8_t
-		break;
-	case Aes::Padding::Zeros:
-		memset(space + len, 0x00, filllength);
-		break;
-	default:
-		//not support padding mode
-		assert(false);
-	};
+btring Aes::encode(const char* plaintext, uint32_t plainlen, const btring& extra){
+	uint32_t buffer_len = ((plainlen/16)*16) + 16;/* /16*16+16 计算出了最大需要的空间 */
+	uint8_t* buffer = new uint8_t[buffer_len];
+	memcpy(buffer, plaintext, plainlen);
 
-	//分组并加密
-	uint8_t matrix4x4[16];
+	//填充
+	this->_padding(buffer, buffer_len, plainlen);
+
+	//加密
 	if (_type == Aes::Type::ECB) {
-		for (uint32_t i = 0; i < l_space / 16; i++) {
-			AesFun::char2matrix4x4(matrix4x4, space + (i * 16));
-			_16encode(matrix4x4);
-			AesFun::char2matrix4x4(space + (i * 16), matrix4x4);
-		}
+		this->_ecb_encrypt(buffer, buffer_len);
 	}else if (_type == Aes::Type::CBC) {
-		const uint8_t* _piv = 
-			(const uint8_t*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-		if (_iv != nullptr)
-			_piv = _iv;
-
-		for (uint32_t i = 0; i < l_space / 16; i++){
-			for (int n = 0;n < 16; n++)
-				*(space + (i * 16) +n) ^= _piv[n];
-			AesFun::char2matrix4x4(matrix4x4, space + (i * 16));
-			_16encode(matrix4x4);
-			AesFun::char2matrix4x4(space + (i * 16), matrix4x4);
-			_piv = space + (i * 16);
-		}
+		this->_cbc_encrypt(buffer, buffer_len,extra);
 	}else {
 		assert(false);
 	}
 
-	btring ret(space, l_space);
-	delete[] space;
+	btring ret(buffer, buffer_len);
+	delete[] buffer;
 	return ret;
 }
 
-
-bool Aes::decode(const btring& b, btring& n){
-	return decode((const char*)b.str(), (uint32_t)b.size(), n);
+bool Aes::decode(const btring& b, btring& n, const btring& extra){
+	return decode((const char*)b.str(), (uint32_t)b.size(), n, extra);
 }
-bool Aes::decode(const char* ciphertext, uint32_t len, btring& b) {
+bool Aes::decode(const char* ciphertext, uint32_t len, btring& b, const btring& extra) {
 	uint8_t* buffer = new uint8_t[len];
-	
 	memcpy(buffer, ciphertext, len);
 	
 	//分组并解密
-	uint8_t matrix4x4[16];
+	
 	if (_type == Aes::Type::ECB) {
-		
-		for (uint32_t i = 0; i < len / 16; i++) {
-			AesFun::char2matrix4x4(matrix4x4, buffer + i * 16);
-			_16decode(matrix4x4);
-			AesFun::char2matrix4x4(buffer + i * 16, matrix4x4);
-		}
+		this->_ecb_decrypt(buffer, len);
 	}
 	else if (_type == Aes::Type::CBC) {
-
-		uint8_t* buffer2 = new uint8_t[len];
-
-		const uint8_t* _piv =
-			(const uint8_t*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-
-		if (_iv != nullptr)
-			_piv = _iv;
-
-		for (uint32_t i = 0; i < len / 16; i++) {
-			AesFun::char2matrix4x4(matrix4x4, buffer + i * 16);
-			_16decode(matrix4x4);
-			AesFun::char2matrix4x4(buffer2 + i * 16, matrix4x4);
-
-			for (int n = 0; n < 16; n++)
-				*(buffer2 + i * 16 + n) ^= _piv[n];
-			_piv = buffer + i * 16;
-		}
-
-		delete[] buffer;
-		buffer = buffer2;
+		this->_cbc_decrypt(buffer, len, extra);
 	}else {
 		assert(false);
 	}
 
-	//根据填充去除填充
-	int real_length = len;
-	switch (this->_padd) {
-	case Aes::Padding::PKCS5:
-	case Aes::Padding::PKCS7:
-	case Aes::Padding::ISO10126:
-		real_length -= buffer[len - 1];
-		break;
-	case Aes::Padding::Zeros:
-		//0填充无法确定数量，无法去除
-		break;
-	default:
-		assert(false);//not support padding mode
-	};
-
-	if (buffer[len - 1] > 16) {
-		//解密失败，因为填充最大16字节
-		delete[] buffer;
-		return false;
-	}else {
-		b.append(buffer, real_length);
+	uint32_t real_len = 0;
+	if (this->_strippadding(buffer, len, real_len)) {
+		b.append(buffer, real_len);
 		delete[] buffer;
 		return true;
+	} else {
+		delete[] buffer;
+		return false;
 	}
 }
 
@@ -240,7 +148,6 @@ void Aes::_16encode(Matrix4x4 matrix4x4){
 	// 此处不进行列混合
 	AesFun::addroundkey(matrix4x4, rk + 4);
 }
-
 void Aes::_16decode(Matrix4x4 matrix4x4){
 	uint32_t* rk = this->_key.getDKey();
 	AesFun::addroundkey(matrix4x4, rk);
@@ -256,6 +163,123 @@ void Aes::_16decode(Matrix4x4 matrix4x4){
 	// 此处不进行列混合
 	AesFun::addroundkey(matrix4x4, rk + 4);
 }
+
+void Aes::_ecb_encrypt(uint8_t* buffer, uint32_t buffer_len){
+	uint8_t matrix4x4[16];
+	for (uint32_t i = 0; i < buffer_len / 16; i++) {
+		AesFun::char2matrix4x4(matrix4x4, buffer + (i * 16));
+		_16encode(matrix4x4);
+		AesFun::char2matrix4x4(buffer + (i * 16), matrix4x4);
+	}
+}
+void Aes::_ecb_decrypt(uint8_t* buffer, uint32_t len){
+	uint8_t matrix4x4[16];
+	for (uint32_t i = 0; i < len / 16; i++) {
+		AesFun::char2matrix4x4(matrix4x4, buffer + i * 16);
+		_16decode(matrix4x4);
+		AesFun::char2matrix4x4(buffer + i * 16, matrix4x4);
+	}
+}
+
+void Aes::_cbc_encrypt(uint8_t* buffer, uint32_t buffer_len, const btring& _iv){
+	//prepare IV
+	btring iv = _iv;
+	if (_iv.size() < 16) {
+		//密钥扩长
+		iv.fill('\0', 16);
+		memcpy(iv.str(), _iv.str(), _iv.size());
+	}
+	const uint8_t* _piv = iv.str();
+
+	uint8_t matrix4x4[16];
+	for (uint32_t i = 0; i < buffer_len / 16; i++) {
+		for (int n = 0; n < 16; n++) {
+			*(buffer + (i * 16) + n) ^= _piv[n];
+		}
+
+		AesFun::char2matrix4x4(matrix4x4, buffer + (i * 16));
+		_16encode(matrix4x4);
+		AesFun::char2matrix4x4(buffer + (i * 16), matrix4x4);
+
+		_piv = buffer + (i * 16);
+	}
+}
+
+void Aes::_cbc_decrypt(uint8_t* buffer, uint32_t len, const btring& _iv){
+
+	btring iv = _iv;
+	if (_iv.size() < 16) {
+		//密钥扩长
+		iv.fill('\0', 16);
+		memcpy(iv.str(), _iv.str(), _iv.size());
+	}
+	const uint8_t* _piv;
+
+	uint8_t matrix4x4[16];
+	for (int i = len / 16 -1; i>=0 ; i--) {
+		if (i == 0)
+			_piv = iv.str();
+		else
+			_piv = buffer + (i-1) * 16;
+
+		AesFun::char2matrix4x4(matrix4x4, buffer + i * 16);
+		_16decode(matrix4x4);
+		AesFun::char2matrix4x4(buffer + i * 16, matrix4x4);
+
+		for (int n = 0; n < 16; n++)
+			*(buffer + i * 16 + n) ^= _piv[n];
+	}
+
+}
+
+void Aes::_padding(uint8_t* buffer, uint32_t buffer_len,uint32_t data_len){
+	assert((buffer_len - data_len) <= 16);//Maximum padding is 16 bytes 
+	uint8_t fill_len = (uint8_t)(buffer_len - data_len);
+
+	switch (this->_padd) {
+	case Aes::Padding::PKCS5:
+	case Aes::Padding::PKCS7:
+		memset(buffer + data_len, fill_len, fill_len);
+		return;
+	case Aes::Padding::ISO10126:
+		buffer[buffer_len - 1] = fill_len;
+		for (uint32_t i = data_len; i < buffer_len - 1; i++) {
+			//c++ random not support uint8_t
+			uint8_t temp = (uint8_t)random<uint16_t>(0, 255);
+			buffer[i] = temp;
+		}
+		return;
+	case Aes::Padding::Zeros:
+		memset(buffer + data_len, 0x00, fill_len);
+		return;
+	default:
+		assert(false);//not support padding mode
+	};
+	return;
+}
+bool Aes::_strippadding(uint8_t* buffer, uint32_t buffer_len, uint32_t& real_len){
+	//根据填充去除填充
+	switch (this->_padd) {
+	case Aes::Padding::PKCS5:
+	case Aes::Padding::PKCS7:
+	case Aes::Padding::ISO10126:
+		if (buffer[buffer_len - 1] > 16) {
+			return false;
+		} else {
+			real_len = buffer_len - buffer[buffer_len - 1];
+			return true;
+		}
+		break;
+	case Aes::Padding::Zeros:
+		buffer_len = real_len;
+		return true;
+	default:
+		assert(false);//not support padding mode
+	};
+}
+
+
+/// ----------------------------------------------------------
 
 
 void AesFun::char2matrix4x4(Matrix4x4 out,const uint8_t* in){
@@ -394,7 +418,6 @@ void AesFun::addroundkey(uint8_t* matrix4x4, uint32_t* _4rkey){
 		_4rkey++;
 	}
 }
-
 
 
 ///-------------------------------

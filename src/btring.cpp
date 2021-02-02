@@ -23,7 +23,7 @@ btring btring::shift(char** buffer, size_t len) {
 	naps.length = len;
 	naps.content = (uint8_t*)(*buffer);
 	*buffer = nullptr;
-	return std::move(naps);
+	return naps;
 }
 
 btring::btring(const void* c, size_t len) noexcept {
@@ -150,7 +150,7 @@ uint8_t& btring::operator()(size_t pos)const noexcept{
 
 std::string btring::toStdString()const {
 	std::string ret((const char*)content,length);
-	return std::move(ret);
+	return ret;
 }
 
 

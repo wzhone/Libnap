@@ -25,7 +25,7 @@ btring Hex::encode(btring& mem,bool capital){
 		_res_str[i * 2 + 1] = HEX_TRANS(_m[i] & 0x0F, capital);
 	}
 
-	return std::move(result);
+	return result;
 }
 
 btring Hex::decode(btring& mem){
@@ -48,7 +48,7 @@ btring Hex::decode(btring& mem){
 		if (!odd || (i * 2ll + 1 < len))
 			buffer[i] += STR_TRANS(_m[i * 2 + 1]); //还没做偶数次
 	}
-	return std::move(result);
+	return result;
 }
 
 

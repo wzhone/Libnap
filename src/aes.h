@@ -26,7 +26,6 @@ public:
 	inline uint32_t* getKey() { return _keys_e; }
 	inline uint32_t* getDKey() { return _keys_d; }
 private:
-
 	void _key_expansion(const uint8_t* key);
 
 	/*
@@ -36,7 +35,6 @@ private:
 	uint32_t* _keys_d = nullptr;
 
 	uint32_t _array_length = 0; //Nb (Nr + 1) = 44,52,60
-
 };
 
 
@@ -72,7 +70,8 @@ class Aes {
 public:
 	enum class Type {
 		ECB,
-		CBC
+		CBC,
+		/*CTR*/
 	};
 
 	enum class Padding {
@@ -81,15 +80,15 @@ public:
 		Zeros,			//0填充解密时不会自动去除
 	};
 
-	Aes(Padding, AesKey::Type, Type, Key key, Key iv = nullptr);
+	Aes(Padding, AesKey::Type, Type, Key key);
 
-	btring encode(const char* plaintext, uint32_t len);
-	bool decode(const char* ciphertext, uint32_t len,btring&);
+	btring encode(const char* plaintext, uint32_t len,const btring& extra = "");
+	bool decode(const char* ciphertext, uint32_t len,btring&, const btring& extra = "");
 
-	btring encode(const btring&);
-	bool decode(const btring&, btring&);
+	btring encode(const btring&, const btring& extra = "");
+	bool decode(const btring&, btring&, const btring& extra="");
 
-	~Aes();
+	~Aes() {};
 	Aes(Aes&&) noexcept;
 	Aes(const Aes&);
 
@@ -99,11 +98,23 @@ private:
 	void _16encode(Matrix4x4 matrix4x4);
 	void _16decode(Matrix4x4 matrix4x4);
 
+	//ECB
+	void _ecb_encrypt(uint8_t*, uint32_t);
+	void _ecb_decrypt(uint8_t*,uint32_t);
+
+	//CBC
+	void _cbc_encrypt(uint8_t*, uint32_t, const btring&);
+	void _cbc_decrypt(uint8_t*, uint32_t, const btring&);
+
+	//填充和剥离填充
+	void _padding(uint8_t*, uint32_t, uint32_t);
+	bool _strippadding(uint8_t*, uint32_t, uint32_t&);
+
+
 	const Padding _padd;
 	const Type _type;
 	AesKey _key;
 
-	uint8_t* _iv = nullptr;
 };
 
 

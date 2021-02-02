@@ -93,17 +93,17 @@ bool base64(vector<string>& n) {
 bool aes_cbc(vector<string>& n) {
 	Aes aes128(Aes::Padding::PKCS5,
 		AesKey::Type::T_128,
-		Aes::Type::CBC, n[1].c_str(), (char*)n[4].c_str());
+		Aes::Type::CBC, n[1].c_str());
 	Aes aes192(Aes::Padding::PKCS5,
 		AesKey::Type::T_192,
-		Aes::Type::CBC, n[2].c_str(), (char*)n[4].c_str());
+		Aes::Type::CBC, n[2].c_str());
 	Aes aes256(Aes::Padding::PKCS5,
 		AesKey::Type::T_256,
-		Aes::Type::CBC, n[3].c_str(), (char*)n[4].c_str());
+		Aes::Type::CBC, n[3].c_str());
 	//¼ÓÃÜ¹ý³Ì
-	btring res128 = aes128.encode((const char*)n[0].c_str(), (uint32_t)n[0].size());
-	btring res192 = aes192.encode((const char*)n[0].c_str(), (uint32_t)n[0].size());
-	btring res256 = aes256.encode((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	btring res128 = aes128.encode((const char*)n[0].c_str(), (uint32_t)n[0].size(), (char*)n[4].c_str());
+	btring res192 = aes192.encode((const char*)n[0].c_str(), (uint32_t)n[0].size(), (char*)n[4].c_str());
+	btring res256 = aes256.encode((const char*)n[0].c_str(), (uint32_t)n[0].size(), (char*)n[4].c_str());
 
 	if (!(Base64::encode(res128) == n[5]))  return false;
 	if (!(Base64::encode(res192) == n[6])) return false;
@@ -113,9 +113,9 @@ bool aes_cbc(vector<string>& n) {
 	btring r_aes128;
 	btring r_aes192;
 	btring r_aes256;
-	aes128.decode(res128, r_aes128);
-	aes192.decode(res192, r_aes192);
-	aes256.decode(res256, r_aes256);
+	aes128.decode(res128, r_aes128, (char*)n[4].c_str());
+	aes192.decode(res192, r_aes192, (char*)n[4].c_str());
+	aes256.decode(res256, r_aes256, (char*)n[4].c_str());
 
 	if (!(r_aes128 == n[0])) return false;
 	if (!(r_aes192 == n[0])) return false;
