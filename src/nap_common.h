@@ -148,5 +148,11 @@ public:
 	JsonException(const char* str)noexcept :NapException(str) {};
 };
 
+class AesException : public NapException {
+public:
+	AesException(const char* str)noexcept :NapException(str) {};
+};
+
+
 
 _NAP_END

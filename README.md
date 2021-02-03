@@ -16,7 +16,7 @@ A Cross-Platform **LIB**rary of **N**etwork **AP**plication tools
 
 <br/>
 
-## 1. BUILD
+## 1. 构建
 
 <br/>
 
@@ -43,13 +43,13 @@ $ ./libnap.sln
 <br/>
 <br/>
 
-## 2. INSTALLATION
+## 2. 安装
 
 编译成功后，在output文件夹下，会有需要的静态库文件和头文件。
 
 <br/>
 
-## 3. Other content 
+## 3. 其他
 
 <br/>
 
@@ -67,7 +67,7 @@ make fast : 启用多核快速安静编译
 
 <br/>
 
-##  4. Platform requirements 
+##  4. 平台需求
 ------
 
 ##### Windows

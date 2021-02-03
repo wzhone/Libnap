@@ -1,4 +1,4 @@
-COMMON = -std=c++11 -W -Wall -O0 $(Mco) 
+COMMON = -std=c++14 -W -Wall -O0 $(Mco) 
 LINKLIB = -lpthread -L/usr/local/lib
 export COMMON
 export LINKLIB

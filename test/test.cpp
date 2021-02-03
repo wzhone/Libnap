@@ -91,31 +91,69 @@ bool base64(vector<string>& n) {
 }
 
 bool aes_cbc(vector<string>& n) {
-	Aes aes128(Aes::Padding::PKCS5,
-		AesKey::Type::T_128,
-		Aes::Type::CBC, n[1].c_str());
-	Aes aes192(Aes::Padding::PKCS5,
-		AesKey::Type::T_192,
-		Aes::Type::CBC, n[2].c_str());
-	Aes aes256(Aes::Padding::PKCS5,
-		AesKey::Type::T_256,
-		Aes::Type::CBC, n[3].c_str());
+
 	//加密过程
-	btring res128 = aes128.encode((const char*)n[0].c_str(), (uint32_t)n[0].size(), (char*)n[4].c_str());
-	btring res192 = aes192.encode((const char*)n[0].c_str(), (uint32_t)n[0].size(), (char*)n[4].c_str());
-	btring res256 = aes256.encode((const char*)n[0].c_str(), (uint32_t)n[0].size(), (char*)n[4].c_str());
+	auto en128 = Aes< AesCBC, AesKey::Type::T_128>::Encryption(n[1].c_str(), (char*)n[4].c_str());
+	auto en192 = Aes< AesCBC, AesKey::Type::T_192>::Encryption(n[2].c_str(), (char*)n[4].c_str());
+	auto en256 = Aes< AesCBC, AesKey::Type::T_256>::Encryption(n[3].c_str(), (char*)n[4].c_str());
+	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	btring res128 = en128.end();
+	btring res192 = en192.end();
+	btring res256 = en256.end();
 
 	if (!(Base64::encode(res128) == n[5]))  return false;
 	if (!(Base64::encode(res192) == n[6])) return false;
 	if (!(Base64::encode(res256) == n[7]))  return false;
 
 	//解密过程
-	btring r_aes128;
-	btring r_aes192;
-	btring r_aes256;
-	aes128.decode(res128, r_aes128, (char*)n[4].c_str());
-	aes192.decode(res192, r_aes192, (char*)n[4].c_str());
-	aes256.decode(res256, r_aes256, (char*)n[4].c_str());
+	auto de128 = Aes< AesCBC, AesKey::Type::T_128>::Decryption(n[1].c_str(), (char*)n[4].c_str());
+	auto de192 = Aes< AesCBC, AesKey::Type::T_192>::Decryption(n[2].c_str(), (char*)n[4].c_str());
+	auto de256 = Aes< AesCBC, AesKey::Type::T_256>::Decryption(n[3].c_str(), (char*)n[4].c_str());
+	de128.add(res128);
+	de192.add(res192);
+	de256.add(res256);
+
+	btring r_aes128 = de128.end();
+	btring r_aes192 = de192.end();
+	btring r_aes256 = de256.end();
+
+	if (!(r_aes128 == n[0])) return false;
+	if (!(r_aes192 == n[0])) return false;
+	if (!(r_aes256 == n[0])) return false;
+
+	return true;
+}
+
+bool aes_ctr(vector<string>& n) {
+
+	//加密过程
+	auto en128 = Aes< AesCTR, AesKey::Type::T_128>::Encryption(n[1].c_str(), (char*)n[4].c_str());
+	auto en192 = Aes< AesCTR, AesKey::Type::T_192>::Encryption(n[2].c_str(), (char*)n[4].c_str());
+	auto en256 = Aes< AesCTR, AesKey::Type::T_256>::Encryption(n[3].c_str(), (char*)n[4].c_str());
+	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	btring res128 = en128.end();
+	btring res192 = en192.end();
+	btring res256 = en256.end();
+
+	if (!(Base64::encode(res128) == n[5]))  return false;
+	if (!(Base64::encode(res192) == n[6])) return false;
+	if (!(Base64::encode(res256) == n[7]))  return false;
+
+	//解密过程
+	auto de128 = Aes< AesCTR, AesKey::Type::T_128>::Decryption(n[1].c_str(), (char*)n[4].c_str());
+	auto de192 = Aes< AesCTR, AesKey::Type::T_192>::Decryption(n[2].c_str(), (char*)n[4].c_str());
+	auto de256 = Aes< AesCTR, AesKey::Type::T_256>::Decryption(n[3].c_str(), (char*)n[4].c_str());
+	de128.add(res128);
+	de192.add(res192);
+	de256.add(res256);
+
+	btring r_aes128 = de128.end();
+	btring r_aes192 = de192.end();
+	btring r_aes256 = de256.end();
 
 	if (!(r_aes128 == n[0])) return false;
 	if (!(r_aes192 == n[0])) return false;
@@ -125,25 +163,32 @@ bool aes_cbc(vector<string>& n) {
 }
 
 bool aes_ecb(vector<string>& n) {
-	Aes aes128(Aes::Padding::PKCS5,AesKey::Type::T_128,Aes::Type::ECB, n[1].c_str());
-	Aes aes192(Aes::Padding::PKCS5,AesKey::Type::T_192,Aes::Type::ECB, n[2].c_str());
-	Aes aes256(Aes::Padding::PKCS5,AesKey::Type::T_256,Aes::Type::ECB, n[3].c_str());
 	//加密过程
-	btring res128 = aes128.encode((const char*)n[0].c_str(), n[0].size());
-	btring res192 = aes192.encode((const char*)n[0].c_str(), n[0].size());
-	btring res256 = aes256.encode((const char*)n[0].c_str(), n[0].size());
+	auto en128 = Aes< AesECB, AesKey::Type::T_128>::Encryption(n[1].c_str());
+	auto en192 = Aes< AesECB, AesKey::Type::T_192>::Encryption(n[2].c_str());
+	auto en256 = Aes< AesECB, AesKey::Type::T_256>::Encryption(n[3].c_str());
+	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	btring res128 = en128.end();
+	btring res192 = en192.end();
+	btring res256 = en256.end();
 
 	if (!(Base64::encode(res128) == n[4]))  return false;
 	if (!(Base64::encode(res192) == n[5])) return false;
 	if (!(Base64::encode(res256) == n[6]))  return false;
 
 	//解密过程
-	btring r_aes128;
-	btring r_aes192;
-	btring r_aes256;
-	aes128.decode(res128, r_aes128);
-	aes192.decode(res192, r_aes192);
-	aes256.decode(res256, r_aes256);
+	auto de128 = Aes< AesECB, AesKey::Type::T_128>::Decryption(n[1].c_str());
+	auto de192 = Aes< AesECB, AesKey::Type::T_192>::Decryption(n[2].c_str());
+	auto de256 = Aes< AesECB, AesKey::Type::T_256>::Decryption(n[3].c_str());
+	de128.add(res128);
+	de192.add(res192);
+	de256.add(res256);
+
+	btring r_aes128 = de128.end();
+	btring r_aes192 = de192.end();
+	btring r_aes256 = de256.end();
 
 	if (!(r_aes128 == n[0])) return false;
 	if (!(r_aes192 == n[0])) return false;
@@ -248,6 +293,7 @@ int main() {
 
 	TEST("AES-CBC", aes_cbc);
 	TEST("AES-ECB", aes_ecb);
+	TEST("AES-CTR", aes_ctr);
 	TEST("BASE64", base64);
 	TEST("SHA256", sha256);
 	TEST("SHA1", sha1);
@@ -256,6 +302,7 @@ int main() {
 
 	RUN();
 	PRINTRESULT();
+
 
 	return 0;
 }
