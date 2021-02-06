@@ -1,10 +1,13 @@
 #include "aes.h"
 _NAP_BEGIN
 
-
-#define SWAP(a,b) (((a)^=(b)),((b)^=(a)),((a)^=(b)))
-
-#define INT32(a,b,c,d) ((((uint32_t)(a))<<24)|(((uint32_t)(b))<<16)|(((uint32_t)(c))<<8)|((uint32_t)(d)))
+/*
+	Nb = 4; 4 * 32bit = 128bit
+	Nk  4,6,8    Nk * word(32bit) = Key Length
+	Nr(number of rounds) : 10,12,14
+	The Key Expansion generates a total of Nb(4) (Nr + 1) words
+	Nb (Nr + 1) = 44,52,60 （word）
+*/
 
 static const uint32_t aes_rcon[11] = {
 		0x01000000UL,0x01000000UL, 0x02000000UL, 0x04000000UL, 0x08000000UL,
@@ -60,15 +63,52 @@ static const uint8_t aes_inv_3mt[4][4] = {
 
 ////-------------------------------------------------------------AesKey
 
-AesKey::AesKey(const char* key, Type _type) :type(_type) {
-	_array_length = 4 * (round() + 1);
-	_keys_e = new uint32_t[_array_length];
-	_keys_d = new uint32_t[_array_length];
+AesKey::AesKey(const char* key, size_t length){
+	if (length <= 16) {
+		if (length != 16) {
+			char tmp[16] = { 0 };
+			memcpy(tmp, key, length);
+			_init(tmp, Type::T_128);
+		}else {
+			_init(key, Type::T_128);
+		}
+		return;
+	}
+	if (length <= 24) {
+		if (length != 24) {
+			char tmp[24] = { 0 };
+			memcpy(tmp, key, length);
+			_init(tmp, Type::T_192);
+		} else {
+			_init(key, Type::T_192);
+		}
+		return;
+	}
+	if (length > 32) length = 32;
 
-	_key_expansion((const uint8_t*)key);
+	if (length != 32) {
+		char tmp[32] = { 0 };
+		memcpy(tmp, key, length);
+		_init(tmp, Type::T_256);
+	} else {
+		_init(key, Type::T_256);
+	}
 }
-AesKey::AesKey(const btring& key, Type t):
-	AesKey((const char*)key.str(), t){
+AesKey::AesKey(const char* key, Type _type) {
+	//没法判断边界
+	_init(key, _type);
+}
+AesKey::AesKey(const btring& key, Type _type){
+
+	//防止访问过界
+	btring _key = key;
+	switch (_type) {
+	case Type::T_128: _key.resize(16); break;
+	case Type::T_192: _key.resize(24); break;
+	case Type::T_256: _key.resize(32); break;
+	}
+	
+	_init((const char*)_key.str(), _type);
 }
 AesKey::AesKey(AesKey&& old)noexcept :type(old.type) {
 	this->_array_length = old._array_length;
@@ -104,6 +144,14 @@ uint32_t AesKey::round() const {
 	}
 	assert(false);
 	return 0;
+}
+void AesKey::_init(const char* key, Type _type){
+	this->type = _type;
+	_array_length = 4 * (round() + 1);
+	_keys_e = new uint32_t[_array_length];
+	_keys_d = new uint32_t[_array_length];
+
+	_key_expansion((const uint8_t*)key);
 }
 void AesKey::_key_expansion(const uint8_t* key) {
 
@@ -176,50 +224,7 @@ void AesKey::_key_expansion(const uint8_t* key) {
 	}
 }
 
-////-------------------------------------------------------------AesIV
 
-AesIV::AesIV(const char* iv) {
-	btring _iv(iv, 16);
-	this->set(_iv);
-}
-AesIV::AesIV() {
-	this->_iv.fill('\0', 16);
-}
-void AesIV::set(btring iv) {
-	this->_iv = iv;
-}
-AesIV& AesIV::operator++(int) {
-	uint8_t* buf = this->_iv.str();
-	bool flag = false;
-	for (int i = 15; i >= 0; i--) {
-		if (i == 15) {
-			if (buf[i] == 0xff) {
-				buf[i] = 0;
-				flag = true;
-			}
-			else {
-				buf[i]++;
-			}
-			continue;
-		}
-		if (flag) {
-			if (buf[i] == 0xff) {
-				buf[i] = 0;
-				flag = true;
-				continue;
-			}
-			else {
-				buf[i]++;
-				flag = false;
-				break;
-			}
-		}
-		else {
-			break;
-		}
-	}
-	return *this;
-}
 
 ////-------------------------------------------------------------AesFun
 
@@ -311,6 +316,39 @@ uint8_t AesFun::g_num(uint8_t u, uint8_t v) {//两字节的伽罗华域乘法运算
 	}
 	return p;
 }
+void AesFun::g_num128(const uint8_t* x,const uint8_t* y, uint8_t* z) {
+	uint8_t v[16];
+	int i, j;
+	memset(z, 0, 16);
+	memcpy(v, y, 16);
+
+
+	for (i = 0; i < 16; i++) {
+		for (j = 0; j < 8; j++) {
+			if (x[i] & 1 << (7 - j)) {
+				/* Z_(i + 1) = Z_i XOR V_i */
+				uint32_t* d = (uint32_t*)z;
+				uint32_t* s = (uint32_t*)v;
+				*d++ ^= *s++;
+				*d++ ^= *s++;
+				*d++ ^= *s++;
+				*d++ ^= *s++;
+			} else {
+				/* Z_(i + 1) = Z_i */
+			}
+
+			if (v[15] & 0x01) {
+				/* V_(i + 1) = (V_i >> 1) XOR R */
+				shift_right_block(v);
+				/* R = 11100001 || 0^120 */
+				v[0] ^= 0xe1;
+			} else {
+				/* V_(i + 1) = V_i >> 1 */
+				shift_right_block(v);
+			}
+		}
+	}
+}
 void AesFun::mixcolumns(uint8_t* matrix4x4) {
 	uint8_t tmp[4][4] = { {0} };
 	for (int i = 0; i < 16; i++)
@@ -381,198 +419,196 @@ void AesFun::decrypt_block(Matrix4x4 matrix4x4, const AesKey& key) {
 	// 此处不进行列混合
 	AesFun::addroundkey(matrix4x4, rk + 4);
 }
+void AesFun::shift_right_block(uint8_t* v) {
+	uint32_t val;
 
+	val = INT32(v[12], v[13], v[14], v[15]);
+	val >>= 1;
+	if (v[11] & 0x01)
+		val |= 0x80000000;
+	INT32TOCHAR(v + 12, val);
+
+	val = INT32(v[8], v[9], v[10], v[11]);
+	val >>= 1;
+	if (v[7] & 0x01)
+		val |= 0x80000000;
+	INT32TOCHAR(v + 8, val);
+
+	val = INT32(v[4], v[5], v[6], v[7]);
+	val >>= 1;
+	if (v[3] & 0x01)
+		val |= 0x80000000;
+	INT32TOCHAR(v + 4, val);
+
+	val = INT32(v[0], v[1], v[2], v[3]);
+	val >>= 1;
+	INT32TOCHAR(v, val);
+}
+void AesFun::xor_128block(uint8_t* dst, const uint8_t* src)  {
+	//uint32_t* d = (uint32_t*)dst;
+	//uint32_t* s = (uint32_t*)src;
+	//*d++ ^= *s++;
+	//*d++ ^= *s++;
+	//*d++ ^= *s++;
+	//*d++ ^= *s++;
+
+	uint64_t* d = (uint64_t*)dst;
+	uint64_t* s = (uint64_t*)src;
+	*d++ ^= *s++;
+	*d++ ^= *s++;
+}
 
 
 ////-------------------------------------------------------------AesHandler
 
-void AesHandler::add(const char* data, size_t data_len){
-	if (_buffer_len == 0) {
-		//没有待处理数据，直接处理参数传递的数据
-		if (data_len < 16) {
-			memcpy(_buffer, data, data_len);
-			_buffer_len = data_len;
-		} else {
-			size_t max_deal = data_len - (data_len % 16);
-			this->handle(data, max_deal);
-			if (max_deal != data_len) {
-				_buffer_len = data_len - max_deal;
-				memcpy(_buffer, data + max_deal, _buffer_len);
-			}
-			return;
-		}
-	}else {
-		//先处理拼凑待处理的数据然后在处理缓冲区
-		if (_buffer_len + data_len < 16) {
-			memcpy(_buffer+ _buffer_len, data, data_len);
-			_buffer_len += data_len;
-		} else {
-			uint32_t rent_length = 16 - (uint32_t)_buffer_len;
-			memcpy(_buffer + _buffer_len, data, rent_length);
-			_buffer_len = 0;
-			this->handle((const char*)_buffer, 16);
-			data += rent_length;
-			data_len -= rent_length;
-			this->add((const char*)_buffer, data_len);
-		}
-		return;
-	}
-}
 
-btring AesHandler::end(){
-	if (isEncrypt()) {
 
-		if (this->padding()) {
-			_buffer_len = 16;
-		}
-		if (_buffer_len != 0) {
-			this->handle((const char*)_buffer, _buffer_len);
-		}
-		
-		btring result = std::move(this->_result);
-		this->reset();
-		return result;
 
-	} else {
+//btring AesHandler::end(){
+//	if (isEncrypt()) {
+//
+//		if (this->padding()) {
+//			_buffer_len = 16;
+//		}
+//		if (_buffer_len != 0) {
+//			this->handle((const char*)_buffer, _buffer_len);
+//		}
+//		
+//		btring result = std::move(this->_result);
+//		this->reset();
+//		return result;
+//
+//	} else {
+//
+//		if (this->_buffer_len != 0) {
+//			//解密的数据一定是16的倍数，除非没填充
+//			this->handle((const char*)_buffer, _buffer_len);
+//			//认为是没填充则没必要调用填充函数
+//			btring result = std::move(this->_result);
+//			this->reset();
+//			return result;
+//		} else {
+//			if (this->padding()) {
+//				btring result = std::move(this->_result);
+//				this->reset();
+//				return result;
+//			} else {
+//				this->reset();
+//				return "";
+//			}
+//		}
+//	}
+//}
 
-		if (this->_buffer_len != 0) {
-			//解密的数据一定是16的倍数，除非没填充
-			this->handle((const char*)_buffer, _buffer_len);
-			//认为是没填充则没必要调用填充函数
-			btring result = std::move(this->_result);
-			this->reset();
-			return result;
-		} else {
-			if (this->padding()) {
-				btring result = std::move(this->_result);
-				this->reset();
-				return result;
-			} else {
-				this->reset();
-				return "";
-			}
-		}
-	}
-}
 
-void AesHandler::reset(){
-	this->_buffer_len = 0;
-	this->_result = "";
-}
 
 ////-------------------------------------------------------------AesECB
 
 
-AesECB::AesECB(AesKey key, AesPadding p)
-	:padding(p),_key(key){
-}
-
-void AesECB::encrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len) {
-	assert(buffer_len % 16 == 0);
-	uint8_t matrix4x4[16];
-	for (uint32_t i = 0; i < buffer_len / 16; i++) {
-		AesFun::char2matrix4x4(matrix4x4, buffer + (i * 16));
-		AesFun::encrypt_block(matrix4x4, _key);
-		AesFun::char2matrix4x4(ret + (i * 16), matrix4x4);
-	}
-}
-
-void AesECB::decrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len) {
-	uint8_t matrix4x4[16];
-	for (uint32_t i = 0; i < buffer_len / 16; i++) {
-		AesFun::char2matrix4x4(matrix4x4, buffer + i * 16);
-		AesFun::decrypt_block(matrix4x4, _key);
-		AesFun::char2matrix4x4(ret + i * 16, matrix4x4);
-	}
-}
-
-
-////-------------------------------------------------------------AesCBC
-
-AesCBC::AesCBC(AesKey key, AesIV iv, AesPadding p)
-	: padding(p),_key(key),_iv(iv){
-}
-
-void AesCBC::encrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len){
-	memcpy(ret, buffer, buffer_len);
-
-	const uint8_t* _piv = _iv.get().str();
-
-	uint8_t matrix4x4[16];
-	for (uint32_t i = 0; i < buffer_len / 16; i++) {
-		
-		for (int n = 0; n < 16; n++) {
-			*(ret + (i * 16) + n) ^= _piv[n];
-		}
-
-		AesFun::char2matrix4x4(matrix4x4, ret + (i * 16));
-		AesFun::encrypt_block(matrix4x4, this->_key);
-		AesFun::char2matrix4x4(ret + (i * 16), matrix4x4);
-
-		_piv = ret + (i * 16);
-	}
-	_iv.set(btring(_piv, 16));
-}
-
-void AesCBC::decrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len){
-	memcpy(ret, buffer, buffer_len);
-
-	const uint8_t* _piv = _iv.get().str();
-
-	uint8_t matrix4x4[16];
-	for (uint32_t i = 0; i < buffer_len / 16; i++) {
-
-		AesFun::char2matrix4x4(matrix4x4, ret + i * 16);
-		AesFun::decrypt_block(matrix4x4, this->_key);
-		AesFun::char2matrix4x4(ret + i * 16, matrix4x4);
-
-		for (int n = 0; n < 16; n++)
-			*(ret + i * 16 + n) ^= _piv[n];
-
-		_piv = buffer + i * 16;
-	}
-	_iv.set(btring(_piv, 16));
-	
-}
-
-////-------------------------------------------------------------AesCTR
-
-
-AesCTR::AesCTR(AesKey key, AesIV counter,AesPadding p)
-	: padding(p),_key(key), _counter(counter) {
-}
-
-void AesCTR::encrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len) {
-	memcpy(ret, buffer, buffer_len);
-
-	uint8_t matrix4x4[16];
-	for (uint32_t i = 0; i < buffer_len / 16; i++) {
-		uint8_t temp[16];
-		AesFun::char2matrix4x4(matrix4x4, _counter.get().str());
-		AesFun::encrypt_block(matrix4x4,this->_key);
-		AesFun::char2matrix4x4(temp, matrix4x4);
-
-		const uint32_t block = i * 16;
-		for (int n = 0; n < 16; n++)
-			*(ret + block + n) = *(buffer + block + n) ^ temp[n];
-
-		_counter++;
-	}
-	//流处理可能有不足16的数据，需要单独处理
-	if (buffer_len % 16 != 0) {
-		uint32_t remain = buffer_len - (buffer_len / 16) * 16;
-		uint8_t _temp_buf_src[16] = { 0 };
-		uint8_t _temp_buf_dest[16] = { 0 };
-		memcpy(_temp_buf_src,buffer + buffer_len - remain,remain);
-		this->encrypt(_temp_buf_src, _temp_buf_dest, 16);
-		memcpy(ret + buffer_len - remain, _temp_buf_dest, remain);
-	}
-
-}
-
-void AesCTR::decrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len) {
-	encrypt(buffer, ret, buffer_len);
-}
+//AesECB::AesECB(AesKey key, AesPadding p)
+//	:padding(p),_key(key){
+//}
+//
+//void AesECB::encrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len) {
+//
+//}
+//
+//void AesECB::decrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len) {
+//	uint8_t matrix4x4[16];
+//	for (uint32_t i = 0; i < buffer_len / 16; i++) {
+//		AesFun::char2matrix4x4(matrix4x4, buffer + i * 16);
+//		AesFun::decrypt_block(matrix4x4, _key);
+//		AesFun::char2matrix4x4(ret + i * 16, matrix4x4);
+//	}
+//}
+//
+//
+//////-------------------------------------------------------------AesCBC
+//
+//AesCBC::AesCBC(AesKey key, AesIV iv, AesPadding p)
+//	: padding(p),_key(key),_iv(iv){
+//}
+//
+//void AesCBC::encrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len){
+//	memcpy(ret, buffer, buffer_len);
+//
+//	const uint8_t* _piv = _iv.get().str();
+//
+//	uint8_t matrix4x4[16];
+//	for (uint32_t i = 0; i < buffer_len / 16; i++) {
+//		
+//		for (int n = 0; n < 16; n++) {
+//			*(ret + (i * 16) + n) ^= _piv[n];
+//		}
+//
+//		AesFun::char2matrix4x4(matrix4x4, ret + (i * 16));
+//		AesFun::encrypt_block(matrix4x4, this->_key);
+//		AesFun::char2matrix4x4(ret + (i * 16), matrix4x4);
+//
+//		_piv = ret + (i * 16);
+//	}
+//	_iv.set(btring(_piv, 16));
+//}
+//
+//void AesCBC::decrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len){
+//	memcpy(ret, buffer, buffer_len);
+//
+//	const uint8_t* _piv = _iv.get().str();
+//
+//	uint8_t matrix4x4[16];
+//	for (uint32_t i = 0; i < buffer_len / 16; i++) {
+//
+//		AesFun::char2matrix4x4(matrix4x4, ret + i * 16);
+//		AesFun::decrypt_block(matrix4x4, this->_key);
+//		AesFun::char2matrix4x4(ret + i * 16, matrix4x4);
+//
+//		for (int n = 0; n < 16; n++)
+//			*(ret + i * 16 + n) ^= _piv[n];
+//
+//		_piv = buffer + i * 16;
+//	}
+//	_iv.set(btring(_piv, 16));
+//	
+//}
+//
+//////-------------------------------------------------------------AesCTR
+//
+//
+//AesCTR::AesCTR(AesKey key, AesIV counter,AesPadding p)
+//	: padding(p),_key(key), _counter(counter) {
+//}
+//
+//void AesCTR::encrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len) {
+//	memcpy(ret, buffer, buffer_len);
+//
+//	uint8_t matrix4x4[16];
+//	for (uint32_t i = 0; i < buffer_len / 16; i++) {
+//		uint8_t temp[16];
+//		AesFun::char2matrix4x4(matrix4x4, _counter.get().str());
+//		AesFun::encrypt_block(matrix4x4,this->_key);
+//		AesFun::char2matrix4x4(temp, matrix4x4);
+//
+//		const uint32_t block = i * 16;
+//		for (int n = 0; n < 16; n++)
+//			*(ret + block + n) = *(buffer + block + n) ^ temp[n];
+//
+//		_counter++;
+//	}
+//	//流处理可能有不足16的数据，需要单独处理
+//	if (buffer_len % 16 != 0) {
+//		uint32_t remain = buffer_len - (buffer_len / 16) * 16;
+//		uint8_t _temp_buf_src[16] = { 0 };
+//		uint8_t _temp_buf_dest[16] = { 0 };
+//		memcpy(_temp_buf_src,buffer + buffer_len - remain,remain);
+//		this->encrypt(_temp_buf_src, _temp_buf_dest, 16);
+//		memcpy(ret + buffer_len - remain, _temp_buf_dest, remain);
+//	}
+//
+//}
+//
+//void AesCTR::decrypt(const uint8_t* buffer, uint8_t* ret, uint32_t buffer_len) {
+//	encrypt(buffer, ret, buffer_len);
+//}
 
 _NAP_END
 

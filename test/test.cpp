@@ -1,5 +1,6 @@
 #include "libnap.h"
 #include "naptest.h"
+
 using namespace std;
 using namespace nap;
 
@@ -93,9 +94,9 @@ bool base64(vector<string>& n) {
 bool aes_cbc(vector<string>& n) {
 
 	//加密过程
-	auto en128 = Aes< AesCBC, AesKey::Type::T_128>::Encryption(n[1].c_str(), (char*)n[4].c_str());
-	auto en192 = Aes< AesCBC, AesKey::Type::T_192>::Encryption(n[2].c_str(), (char*)n[4].c_str());
-	auto en256 = Aes< AesCBC, AesKey::Type::T_256>::Encryption(n[3].c_str(), (char*)n[4].c_str());
+	AES<CBC_Mode>::Encryption en128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
+	AES<CBC_Mode>::Encryption en192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
+	AES<CBC_Mode>::Encryption en256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
 	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
@@ -108,9 +109,9 @@ bool aes_cbc(vector<string>& n) {
 	if (!(Base64::encode(res256) == n[7]))  return false;
 
 	//解密过程
-	auto de128 = Aes< AesCBC, AesKey::Type::T_128>::Decryption(n[1].c_str(), (char*)n[4].c_str());
-	auto de192 = Aes< AesCBC, AesKey::Type::T_192>::Decryption(n[2].c_str(), (char*)n[4].c_str());
-	auto de256 = Aes< AesCBC, AesKey::Type::T_256>::Decryption(n[3].c_str(), (char*)n[4].c_str());
+	AES<CBC_Mode>::Decryption de128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
+	AES<CBC_Mode>::Decryption de192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
+	AES<CBC_Mode>::Decryption de256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
 	de128.add(res128);
 	de192.add(res192);
 	de256.add(res256);
@@ -129,9 +130,10 @@ bool aes_cbc(vector<string>& n) {
 bool aes_ctr(vector<string>& n) {
 
 	//加密过程
-	auto en128 = Aes< AesCTR, AesKey::Type::T_128>::Encryption(n[1].c_str(), (char*)n[4].c_str());
-	auto en192 = Aes< AesCTR, AesKey::Type::T_192>::Encryption(n[2].c_str(), (char*)n[4].c_str());
-	auto en256 = Aes< AesCTR, AesKey::Type::T_256>::Encryption(n[3].c_str(), (char*)n[4].c_str());
+	AES<CTR_Mode>::Encryption en128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
+	AES<CTR_Mode>::Encryption en192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
+	AES<CTR_Mode>::Encryption en256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
+
 	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
@@ -144,9 +146,9 @@ bool aes_ctr(vector<string>& n) {
 	if (!(Base64::encode(res256) == n[7]))  return false;
 
 	//解密过程
-	auto de128 = Aes< AesCTR, AesKey::Type::T_128>::Decryption(n[1].c_str(), (char*)n[4].c_str());
-	auto de192 = Aes< AesCTR, AesKey::Type::T_192>::Decryption(n[2].c_str(), (char*)n[4].c_str());
-	auto de256 = Aes< AesCTR, AesKey::Type::T_256>::Decryption(n[3].c_str(), (char*)n[4].c_str());
+	AES<CTR_Mode>::Decryption de128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
+	AES<CTR_Mode>::Decryption de192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
+	AES<CTR_Mode>::Decryption de256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
 	de128.add(res128);
 	de192.add(res192);
 	de256.add(res256);
@@ -164,9 +166,9 @@ bool aes_ctr(vector<string>& n) {
 
 bool aes_ecb(vector<string>& n) {
 	//加密过程
-	auto en128 = Aes< AesECB, AesKey::Type::T_128>::Encryption(n[1].c_str());
-	auto en192 = Aes< AesECB, AesKey::Type::T_192>::Encryption(n[2].c_str());
-	auto en256 = Aes< AesECB, AesKey::Type::T_256>::Encryption(n[3].c_str());
+	AES<ECB_Mode>::Encryption en128(AesKey(n[1].c_str(), 16));
+	AES<ECB_Mode>::Encryption en192(AesKey(n[2].c_str(), 24));
+	AES<ECB_Mode>::Encryption en256(AesKey(n[3].c_str(), 32));
 	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
@@ -179,9 +181,9 @@ bool aes_ecb(vector<string>& n) {
 	if (!(Base64::encode(res256) == n[6]))  return false;
 
 	//解密过程
-	auto de128 = Aes< AesECB, AesKey::Type::T_128>::Decryption(n[1].c_str());
-	auto de192 = Aes< AesECB, AesKey::Type::T_192>::Decryption(n[2].c_str());
-	auto de256 = Aes< AesECB, AesKey::Type::T_256>::Decryption(n[3].c_str());
+	AES<ECB_Mode>::Decryption de128(AesKey(n[1].c_str(), 16));
+	AES<ECB_Mode>::Decryption de192(AesKey(n[2].c_str(), 24));
+	AES<ECB_Mode>::Decryption de256(AesKey(n[3].c_str(), 32));
 	de128.add(res128);
 	de192.add(res192);
 	de256.add(res256);
@@ -193,6 +195,51 @@ bool aes_ecb(vector<string>& n) {
 	if (!(r_aes128 == n[0])) return false;
 	if (!(r_aes192 == n[0])) return false;
 	if (!(r_aes256 == n[0])) return false;
+
+	return true;
+}
+
+bool aes_gcm(vector<string>& n) {
+	//加密过程
+	AES<GCM_Mode>::Encryption en128(AesKey(n[3].c_str(), 16), AesGCMIV(n[2].c_str()), n[1]);
+	AES<GCM_Mode>::Encryption en192(AesKey(n[4].c_str(), 24), AesGCMIV(n[2].c_str()), n[1]);
+	AES<GCM_Mode>::Encryption en256(AesKey(n[5].c_str(), 32), AesGCMIV(n[2].c_str()), n[1]);
+	en128.add(n[0]);
+	en192.add(n[0]);
+	en256.add(n[0]);
+	auto res128 = en128.end();
+	auto res192 = en192.end();
+	auto res256 = en256.end();
+
+	if (!(Hex::encode(res128.second) == n[6]))  return false;
+	if (!(Hex::encode(res192.second) == n[7])) return false;
+	if (!(Hex::encode(res256.second) == n[8]))  return false;
+
+	//tag
+	if (Hex::encode(res128.first) != n[ 9])  return false;
+	if (Hex::encode(res192.first) != n[10])  return false;
+	if (Hex::encode(res256.first) != n[11])  return false;
+
+	//解密过程
+	AES<GCM_Mode>::Decryption de128(AesKey(n[3].c_str(), 16), AesGCMIV(n[2].c_str()), n[1]);
+	AES<GCM_Mode>::Decryption de192(AesKey(n[4].c_str(), 24), AesGCMIV(n[2].c_str()), n[1]);
+	AES<GCM_Mode>::Decryption de256(AesKey(n[5].c_str(), 32), AesGCMIV(n[2].c_str()), n[1]);
+	de128.add(res128.second);
+	de192.add(res192.second);
+	de256.add(res256.second);
+
+	auto r_aes128 = de128.end();
+	auto r_aes192 = de192.end();
+	auto r_aes256 = de256.end();
+
+	if (!(r_aes128.second == n[0])) return false;
+	if (!(r_aes192.second == n[0])) return false;
+	if (!(r_aes256.second == n[0])) return false;
+
+	//tag
+	if (Hex::encode(r_aes128.first) != n[ 9])  return false;
+	if (Hex::encode(r_aes192.first) != n[10])  return false;
+	if (Hex::encode(r_aes256.first) != n[11])  return false;
 
 	return true;
 }
@@ -294,6 +341,7 @@ int main() {
 	TEST("AES-CBC", aes_cbc);
 	TEST("AES-ECB", aes_ecb);
 	TEST("AES-CTR", aes_ctr);
+	TEST("AES-GCM", aes_gcm);
 	TEST("BASE64", base64);
 	TEST("SHA256", sha256);
 	TEST("SHA1", sha1);
@@ -302,8 +350,5 @@ int main() {
 
 	RUN();
 	PRINTRESULT();
-
-
 	return 0;
 }
-

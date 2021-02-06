@@ -7,9 +7,8 @@ _NAP_BEGIN
 class btring {
 public:
 
-
 	void swap(btring& b);//交换两个字符串
-	static btring shift(char** buffer, size_t len); //将字符串转移到btring
+	static btring shift(char** buffer, size_t len); //将字符串转移到btring托管
 
 	template <class T>
 	T to() const; //强制转换
