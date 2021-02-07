@@ -10,6 +10,7 @@ using namespace nap;
 #endif
 
 
+
 bool btring_test() {
 
 	btring str;
@@ -97,8 +98,14 @@ bool aes_cbc(vector<string>& n) {
 	AES<CBC_Mode>::Encryption en128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
 	AES<CBC_Mode>::Encryption en192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
 	AES<CBC_Mode>::Encryption en256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
+	en128.add(n[0].c_str(), (uint32_t)n[0].size());
+	en192.add(n[0]);
+	en256.add(n[0].c_str(), (uint32_t)n[0].size());
+	en128.reset();
+	en192.reset();
+	en256.reset();
 	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
-	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en192.add(n[0]);
 	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	btring res128 = en128.end();
 	btring res192 = en192.end();
@@ -112,6 +119,12 @@ bool aes_cbc(vector<string>& n) {
 	AES<CBC_Mode>::Decryption de128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
 	AES<CBC_Mode>::Decryption de192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
 	AES<CBC_Mode>::Decryption de256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
+	de128.add(res128);
+	de192.add(res192);
+	de256.add(res256);
+	de128.reset();
+	de192.reset();
+	de256.reset();
 	de128.add(res128);
 	de192.add(res192);
 	de256.add(res256);
@@ -135,7 +148,13 @@ bool aes_ctr(vector<string>& n) {
 	AES<CTR_Mode>::Encryption en256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
 
 	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
-	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en192.add(n[0]);
+	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en128.reset();
+	en192.reset();
+	en256.reset();
+	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en192.add(n[0]);
 	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	btring res128 = en128.end();
 	btring res192 = en192.end();
@@ -149,6 +168,12 @@ bool aes_ctr(vector<string>& n) {
 	AES<CTR_Mode>::Decryption de128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
 	AES<CTR_Mode>::Decryption de192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
 	AES<CTR_Mode>::Decryption de256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
+	de128.add(res128);
+	de192.add(res192);
+	de256.add(res256);
+	de128.reset();
+	de192.reset();
+	de256.reset();
 	de128.add(res128);
 	de192.add(res192);
 	de256.add(res256);
@@ -170,7 +195,13 @@ bool aes_ecb(vector<string>& n) {
 	AES<ECB_Mode>::Encryption en192(AesKey(n[2].c_str(), 24));
 	AES<ECB_Mode>::Encryption en256(AesKey(n[3].c_str(), 32));
 	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
-	en192.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en192.add(n[0]);
+	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en128.reset();
+	en192.reset();
+	en256.reset();
+	en128.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
+	en192.add(n[0]);
 	en256.add((const char*)n[0].c_str(), (uint32_t)n[0].size());
 	btring res128 = en128.end();
 	btring res192 = en192.end();
@@ -184,6 +215,12 @@ bool aes_ecb(vector<string>& n) {
 	AES<ECB_Mode>::Decryption de128(AesKey(n[1].c_str(), 16));
 	AES<ECB_Mode>::Decryption de192(AesKey(n[2].c_str(), 24));
 	AES<ECB_Mode>::Decryption de256(AesKey(n[3].c_str(), 32));
+	de128.add(res128);
+	de192.add(res192);
+	de256.add(res256);
+	de128.reset();
+	de192.reset();
+	de256.reset();
 	de128.add(res128);
 	de192.add(res192);
 	de256.add(res256);
@@ -204,7 +241,13 @@ bool aes_gcm(vector<string>& n) {
 	AES<GCM_Mode>::Encryption en128(AesKey(n[3].c_str(), 16), AesGCMIV(n[2].c_str()), n[1]);
 	AES<GCM_Mode>::Encryption en192(AesKey(n[4].c_str(), 24), AesGCMIV(n[2].c_str()), n[1]);
 	AES<GCM_Mode>::Encryption en256(AesKey(n[5].c_str(), 32), AesGCMIV(n[2].c_str()), n[1]);
-	en128.add(n[0]);
+	en128.add(n[0].c_str(),n[0].size());
+	en192.add(n[0]);
+	en256.add(n[0]);
+	en128.reset();
+	en192.reset();
+	en256.reset();
+	en128.add(n[0].c_str(), n[0].size());
 	en192.add(n[0]);
 	en256.add(n[0]);
 	auto res128 = en128.end();
@@ -224,6 +267,12 @@ bool aes_gcm(vector<string>& n) {
 	AES<GCM_Mode>::Decryption de128(AesKey(n[3].c_str(), 16), AesGCMIV(n[2].c_str()), n[1]);
 	AES<GCM_Mode>::Decryption de192(AesKey(n[4].c_str(), 24), AesGCMIV(n[2].c_str()), n[1]);
 	AES<GCM_Mode>::Decryption de256(AesKey(n[5].c_str(), 32), AesGCMIV(n[2].c_str()), n[1]);
+	de128.add(res128.second);
+	de192.add(res192.second);
+	de256.add(res256.second);
+	de128.reset();
+	de192.reset();
+	de256.reset();
 	de128.add(res128.second);
 	de192.add(res192.second);
 	de256.add(res256.second);

@@ -3,31 +3,6 @@
 #include "btring.h"
 _NAP_BEGIN
 
-
-#define SWAP(a,b) (((a)^=(b)),((b)^=(a)),((a)^=(b)))
-
-#define INT32(a,b,c,d) ((((uint32_t)(a))<<24)|(((uint32_t)(b))<<16)|(((uint32_t)(c))<<8)|((uint32_t)(d)))
-
-#define INT32TOCHAR(dst, src)\
-	(dst)[0] = ((src) >> 24) & 0xff; \
-	(dst)[1] = ((src) >> 16) & 0xff; \
-	(dst)[2] = ((src) >> 8)  & 0xff; \
-	(dst)[3] = (src)        & 0xff;
-
-
-#define U64TOCHAR(chars,val)\
-	(chars)[0] = (uint8_t)(val >> 56);\
-	(chars)[1] = (uint8_t)(val >> 48);\
-	(chars)[2] = (uint8_t)(val >> 40);\
-	(chars)[3] = (uint8_t)(val >> 32);\
-	(chars)[4] = (uint8_t)(val >> 24);\
-	(chars)[5] = (uint8_t)(val >> 16);\
-	(chars)[6] = (uint8_t)(val >> 8 );\
-	(chars)[7] = (uint8_t)(val & 0xff);
-
-
-
-
 typedef const char* Key;
 typedef uint8_t* Matrix4x4;
 
@@ -78,11 +53,13 @@ public:
 		btring _iv(iv, BIT / 8);
 		this->set(_iv);
 	}
+
 	CryptIV() {
 		assert(BIT % 8 == 0);	//The length must be a multiple of eight 
 		assert(BIT != 0);		//Length cannot be zero 
 		this->_iv.fill('\0', BIT);
 	}
+
 	CryptIV& operator++(int) {
 		uint8_t* buf = this->_iv.str();
 		bool flag = false;
@@ -120,14 +97,12 @@ public:
 	}
 	btring& get() { return this->_iv; };
 
-
 private:
 	btring _iv;
 };
 
 typedef CryptIV<128> AesIV;
 typedef CryptIV<96> AesGCMIV;
-
 
 class AesFun {
 public:
@@ -169,69 +144,19 @@ public:
 
 };
 
-///////////////////////////////////////////////////////////
-
 class AesPadding {
-public:
-
 protected:
 
-	AesPadding(AesPaddingType t) :_padding_type(t) {
-
-	};
+	AesPadding(AesPaddingType t) :_padding_type(t) {};
 
 	//len并非是buf的长度，而是buf的有效长度。buf固定为16字节。函数添加填充并返回填充长度
-	int addPadding(char* buf,uint8_t len) {
-		uint8_t fill = 16 - len; //计算填充长度
-
-		switch (this->_padding_type) {
-		case AesPaddingType::None:
-			return 0;
-		case AesPaddingType::PKCS5:
-		case AesPaddingType::PKCS7:
-			memset(buf + len, fill, fill);
-			break;
-		case AesPaddingType::ISO10126:
-			buf[15] = fill;
-			for (uint32_t i = len; i < 15; i++) {
-				buf[i] = (uint8_t)random<uint16_t>(0, 255);;
-			}
-			break;
-		case AesPaddingType::Zeros:
-			memset(buf + len, 0x00, fill);
-			break;
-		default:
-			assert(false);//not support padding mode
-		};
-		return fill;
-	}
+	int addPadding(char* buf, uint8_t len);
 
 	//len是buf的长度，和addPadding不同,返回填充长度却不对填充进行操作
-	int removePadding(char* buf, uint8_t len) {
-		switch (this->_padding_type) {
-		case AesPaddingType::None:
-			return 0;
-		case AesPaddingType::PKCS5:
-		case AesPaddingType::PKCS7:
-		case AesPaddingType::ISO10126:
-			if (buf[len - 1] > 16) {
-				return -1;
-			} else {
-				return buf[len - 1];
-			}
-		case AesPaddingType::Zeros:
-			return 0;
-		default:
-			assert(false);//not support padding mode
-		};
-		return -1;
-	}
-
+	int removePadding(char* buf, uint8_t len);
 
 private:
-
 	AesPaddingType _padding_type;
-
 };
 
 template<typename TRet>
@@ -271,74 +196,34 @@ protected:
 
 class AesECBEncryption : public AesBuffer<btring> , public AesPadding {
 public:
-	AesECBEncryption(AesKey key, AesPaddingType t = AesPaddingType::PKCS7) 
-		: AesPadding(t),_key(key) {
-
-	};
+	AesECBEncryption(AesKey key, AesPaddingType t = AesPaddingType::PKCS7);
 
 protected:
 
 	AesKey _key;
 
-	virtual void handle(const char* buf, char* out, size_t len) {
-		assert(len % 16 == 0);
-		uint8_t matrix4x4[16];
-		for (uint32_t i = 0; i < len / 16; i++) {
-			AesFun::char2matrix4x4(matrix4x4, (uint8_t*)buf + (i * 16));
-			AesFun::encrypt_block(matrix4x4, _key);
-			AesFun::char2matrix4x4((uint8_t*)out + (i * 16), matrix4x4);
-		}
-	}
+	virtual void handle(const char* buf, char* out, size_t len);
+	virtual btring endinput(uint8_t* buf, uint8_t len);
+	virtual void resetdata() {};
 
-	virtual btring endinput(uint8_t* buf, uint8_t len) {
-		int pad = this->addPadding((char*)buf, (uint8_t)len);
-		this->add((char*)buf + 16 - pad, pad); // 需要子类重新添加一下这部分
-		btring res = std::move(_result);
-		return res;
-	}
-
-	virtual void resetdata() {
-		//ecb没有任何需要reset的数据
-	};
 };
 
 class AesECBDecryption : public AesECBEncryption{
 public:
-	AesECBDecryption(AesKey key, AesPaddingType t = AesPaddingType::PKCS7) :
-		AesECBEncryption(key,t){
-	};
+	AesECBDecryption(AesKey key, AesPaddingType t = AesPaddingType::PKCS7);
 
 protected:
 
-	virtual void handle(const char* buf, char* out, size_t len) {
-		assert(len % 16 == 0);
-		uint8_t matrix4x4[16];
-		for (uint32_t i = 0; i < len / 16; i++) {
-			AesFun::char2matrix4x4(matrix4x4, (uint8_t*)buf + (i * 16));
-			AesFun::decrypt_block(matrix4x4, _key);
-			AesFun::char2matrix4x4((uint8_t*)out + (i * 16), matrix4x4);
-		}
-	}
+	virtual void handle(const char* buf, char* out, size_t len);
 
-	virtual btring endinput(uint8_t*, uint8_t) {
-		uint8_t* str = this->_result.str();
-		size_t len = this->_result.size();
+	virtual btring endinput(uint8_t*, uint8_t);
 
-		int removepad = this->removePadding((char*)str + len - 1, 1);
-		this->_result.resize(len - removepad);
-
-		btring res = std::move(_result);
-		return res;
-	}
+	virtual void resetdata() {};
 };
 
 class AesCBCEncryption : public AesBuffer<btring>, public AesPadding {
 public:
-	AesCBCEncryption(AesKey key, AesIV iv, AesPaddingType t = AesPaddingType::PKCS7)
-		: AesPadding(t), _key(key),_iv(iv), _original_iv(iv) {
-
-	};
-
+	AesCBCEncryption(AesKey key, AesIV iv, AesPaddingType t = AesPaddingType::PKCS7);
 	void setIV(AesIV iv) { this->_iv = iv; }
 	AesIV getIV() { return this->_iv; }
 
@@ -347,90 +232,27 @@ protected:
 	AesIV _iv;
 	AesIV _original_iv;
 
-	virtual void handle(const char* buf, char* out, size_t len) {
-		assert(len % 16 == 0);
-		memcpy(out, buf, len);
-		
-		const uint8_t* _piv = _iv.get().str();
-		
-		uint8_t matrix4x4[16];
-		for (uint32_t i = 0; i < len / 16; i++) {
-				
-			for (int n = 0; n < 16; n++) {
-				*(out + (i * 16) + n) ^= _piv[n];
-			}
-		
-			AesFun::char2matrix4x4(matrix4x4, (uint8_t*)out + (i * 16));
-			AesFun::encrypt_block(matrix4x4, this->_key);
-			AesFun::char2matrix4x4((uint8_t*)out + (i * 16), matrix4x4);
-		
-			_piv = (uint8_t*)out + (i * 16);
-		}
-		_iv.set(btring(_piv, 16));
-	}
+	virtual void handle(const char* buf, char* out, size_t len);
 
-	virtual btring endinput(uint8_t* buf, uint8_t len) {
-		int pad = this->addPadding((char*)buf, (uint8_t)len);
-		this->add((char*)buf + 16 - pad, pad); // 需要子类重新添加一下这部分
-		btring res = std::move(_result);
-		return res;
-	}
+	virtual btring endinput(uint8_t* buf, uint8_t len);
 
-	virtual void resetdata() {
-		this->_iv = this->_original_iv;
-	};
-
+	virtual void resetdata();
 };
 
 class AesCBCDecryption : public AesCBCEncryption {
 public:
-	AesCBCDecryption(AesKey key, AesIV iv, AesPaddingType t = AesPaddingType::PKCS7)
-		: AesCBCEncryption(key,iv,t){
-
-	};
+	AesCBCDecryption(AesKey key, AesIV iv, AesPaddingType t = AesPaddingType::PKCS7);
 
 protected:
 
-	virtual void handle(const char* buf, char* out, size_t len) {
-		assert(len % 16 == 0);
-		memcpy(out, buf, len);
-	
-		const uint8_t* _piv = _iv.get().str();
-	
-		uint8_t matrix4x4[16];
-		for (uint32_t i = 0; i < len / 16; i++) {
-	
-			AesFun::char2matrix4x4(matrix4x4, (uint8_t*)out + i * 16);
-			AesFun::decrypt_block(matrix4x4, this->_key);
-			AesFun::char2matrix4x4((uint8_t*)out + i * 16, matrix4x4);
-	
-			for (int n = 0; n < 16; n++)
-				*((uint8_t*)out + i * 16 + n) ^= _piv[n];
-	
-			_piv = (const uint8_t*)buf + i * 16;
-		}
-		_iv.set(btring(_piv, 16));
-	}
-
-	virtual btring endinput(uint8_t*, uint8_t) {
-		uint8_t* str = this->_result.str();
-		size_t len = this->_result.size();
-
-		int removepad = this->removePadding((char*)str + len - 1, 1);
-		this->_result.resize(len - removepad);
-
-		btring res = std::move(_result);
-		return res;
-	}
+	virtual void handle(const char* buf, char* out, size_t len);
+	virtual btring endinput(uint8_t*, uint8_t);
 
 };
 
 class AesCTREncryption : public AesBuffer<btring> {
 public:
-	AesCTREncryption(AesKey key, AesIV counter)
-		:_key(key), _counter(counter), _original_counter(counter){
-
-	};
+	AesCTREncryption(AesKey key, AesIV counter);
 
 	void setCounter(AesIV counter) { this->_counter = counter; }
 	AesIV getCounter() { return this->_counter; }
@@ -440,47 +262,17 @@ protected:
 	AesIV _counter;
 	AesIV _original_counter;
 
-	virtual void handle(const char* buf, char* out, size_t len) {
-		memcpy(out, buf, len);
-	
-		uint8_t matrix4x4[16];
-		for (uint32_t i = 0; i < len / 16; i++) {
-			uint8_t temp[16];
-			AesFun::char2matrix4x4(matrix4x4, _counter.get().str());
-			AesFun::encrypt_block(matrix4x4,this->_key);
-			AesFun::char2matrix4x4(temp, matrix4x4);
-	
-			const uint32_t block = i * 16;
-			for (int n = 0; n < 16; n++)
-				*(out + block + n) = *(buf + block + n) ^ temp[n];
-	
-			_counter++;
-		}
-	}
-	virtual btring endinput(uint8_t* buf, uint8_t len) {
+	virtual void handle(const char* buf, char* out, size_t len);
 
-		if (len != 0) {
-			//需要手动填充然后删除那一部分
-			int f = 16 - len;
-			this->add((const char*)buf + len, f);
-			this->_result.resize(this->_result.size() - f);
-		}
+	virtual btring endinput(uint8_t* buf, uint8_t len);
 
-		btring res = std::move(_result);
-		this->_original_counter = this->_counter; //CTR需要保存计数器，防止被还原
-		return res;
-	}
-	virtual void resetdata() {
-		this->_counter = this->_original_counter;
-	};
-
+	virtual void resetdata();
 };
 
 class AesCTRDecryption : public AesCTREncryption {
 public:
 	AesCTRDecryption(AesKey key, AesIV counter)
 		:AesCTREncryption(key, counter) {
-
 	};
 
 };
@@ -488,11 +280,7 @@ public:
 class AesGCMEncryption : public AesBuffer<std::pair<btring,btring>>{
 public:
 
-	AesGCMEncryption(AesKey key, AesGCMIV iv,btring aad)
-		:_aad(aad),_key(key), _original_iv(iv),_iv(iv){
-		encrypt_block(H, H);
-		resetdata();
-	};
+	AesGCMEncryption(AesKey key, AesGCMIV iv, btring aad);
 
 protected:
 	btring _aad;//const
@@ -505,211 +293,28 @@ protected:
 	uint8_t J0_begin[16] = {0}; //temp,用于最后计算tag
 	uint8_t S[16] = {0}; //tag's temp var
 	
-	
 	//Internal function 
-	void encrypt_block(const uint8_t* plain, uint8_t* crypt) {
-		uint8_t matrix4x4[16];
-		AesFun::char2matrix4x4(matrix4x4, plain);
-		AesFun::encrypt_block(matrix4x4, _key);
-		AesFun::char2matrix4x4(crypt, matrix4x4);
-	}
-	void calculate_j0() {
-		//uint8_t len_buf[16] = { 0 };
-
-		//Only 96-bit IV allowed 
-		memcpy(J0, _iv.get().str(), 12);
-		memset(J0 + 12, 0, 16 - 12/*iv_len*/);
-		J0[16 - 1] = 0x01;
-
-		memcpy(J0_begin, J0, 16);
-		inc32(J0);
-		
-		//if (this->_iv.get().size() == 12) {
-		//	/* Prepare block J_0 = IV || 0^31 || 1  > if len(IV) = 96 */
-		//	memcpy(J0, iv, iv_len);
-		//	memset(J0 + iv_len, 0, 16 - 12/*iv_len*/);
-		//	J0[16 - 1] = 0x01;
-		//} else {
-		//	/*
-		//	 * s = 128 * ceil(len(IV)/128) - len(IV)
-		//	 * J_0 = GHASH_H(IV || 0^(s+64) || [len(IV)]_64) > otherwise
-		//	 */
-		//	memset(J0, 0, 16);
-		//	ghash(H, iv, iv_len, J0);
-		//	//U64TOCHAR(len_buf, 0);                   //高8byte 使用了 0 填充
-		//	INT32TOCHAR(len_buf + 8, iv_len * 8);      //低8byte 填充了  iv_len * 8
-		//	ghash(H, len_buf, sizeof(len_buf), J0);
-		//}
-	}
-	void inc32(uint8_t* block) {
-		//uint32_t val;
-		//val = INT32(block[16 - 4], block[16 - 3], block[16 - 2], block[16 - 1]);
-		//val++;
-		//INT32TOCHAR(block + 16 - 4, val);
-
-		if (block[16 - 1] < 0xff) {
-			(block[16 - 1])++;
-			return;
-		}
-		uint8_t temp[4] = { 0 };
-
-		temp[0] = block[16 - 1];
-		temp[1] = block[16 - 2];
-		temp[2] = block[16 - 3];
-		temp[3] = block[16 - 4];
-		uint32_t* t = (uint32_t*)temp;
-		(*t)++;
-		block[16 - 1] = temp[0];
-		block[16 - 2] = temp[1];
-		block[16 - 3] = temp[2];
-		block[16 - 4] = temp[3];
-	}
-	void gctr(const char* in,char* out,size_t len) {
-		assert(len % 16 == 0);
-
-		size_t i, n;
-		const uint8_t* xpos = (uint8_t*)in;
-		uint8_t* ypos = (uint8_t*)out;
-
-		n = len / 16;
-
-		/* 16Byte blocks */
-		for (i = 0; i < n; i++) {
-			uint8_t temp_buffer[16];
-			encrypt_block(J0, temp_buffer);
-			AesFun::xor_128block(temp_buffer, xpos);
-			memcpy(ypos, temp_buffer, 16);
-			xpos += 16;
-			ypos += 16;
-			inc32(J0);
-		}
-	}
-	void ghash(const uint8_t* x, size_t xlen){
-		//assert(xlen % 16 == 0); _aad
-
-		size_t m, i;
-		const uint8_t* xpos = x;
-		uint8_t tmp[16];
-
-		m = xlen / 16;
-
-		for (i = 0; i < m; i++) {
-			/* Y_i = (Y^(i-1) XOR X_i) dot H */
-			AesFun::xor_128block(S, xpos);
-			xpos += 16;
-
-			/* dot operation:
-			 * multiplication operation for binary Galois (finite) field of
-			 * 2^128 elements */
-			AesFun::g_num128(S, H, tmp);
-			memcpy(S, tmp, 16);
-		}
-
-		if (x + xlen > xpos) {
-			/* Add zero padded last block */
-			size_t last = x + xlen - xpos;
-			memcpy(tmp, xpos, last);
-			memset(tmp + last, 0, sizeof(tmp) - last);
-
-			/* Y_i = (Y^(i-1) XOR X_i) dot H */
-			AesFun::xor_128block(S, tmp);
-
-			/* dot operation:
-			 * multiplication operation for binary Galois (finite) field of
-			 * 2^128 elements */
-			AesFun::g_num128(S, H, tmp);
-			memcpy(S, tmp, 16);
-		}
-	}
+	void encrypt_block(const uint8_t* plain, uint8_t* crypt);
+	void calculate_j0();
+	void inc32(uint8_t* block);
+	void gctr(const char* in, char* out, size_t len);
+	void ghash(const uint8_t* x, size_t xlen);
 
 	//Inherited function 
-	virtual void handle(const char* buf, char* out, size_t len) {
-		gctr(buf, out, len);
-		ghash((const uint8_t*)out, len);
-	}
-	virtual std::pair<btring, btring> endinput(uint8_t* buf, uint8_t len) {
-
-		if (len != 0) {
-			//需要手动填充然后删除那一部分
-			char tmp[16] = { 0 };
-			char tmpout[16] = {0};
-			memcpy(tmp, buf, len);
-			gctr(tmp, tmpout, 16);
-			btring b_tmpout(tmpout, len);
-			this->_result.append(b_tmpout);
-
-			ghash((const uint8_t*)tmpout, len);
-		}
-		btring res = std::move(_result);
-
-		//cal tag
-
-		uint8_t len_buf[16];
-		U64TOCHAR(len_buf, _aad.size() * 8ULL);
-		U64TOCHAR(len_buf + 8, res.size() * 8ULL);
-		ghash(len_buf, sizeof(len_buf));
-
-		char tag[16];
-		memcpy(J0, J0_begin, 16);
-		gctr((const char*)S, tag, sizeof(S));
-		btring _tag(tag, 16);
-		this->_original_iv++;
-
-		return std::make_pair(_tag,res);
-	}
-	virtual void resetdata() {
-		this->_iv = this->_original_iv;
-		calculate_j0();
-		//ghash
-		memset(S, 0, 16);
-		ghash(_aad.str(), _aad.size());
-	};
+	virtual void handle(const char* buf, char* out, size_t len);
+	virtual std::pair<btring, btring> endinput(uint8_t* buf, uint8_t len);
+	virtual void resetdata();
 };
 
 class AesGCMDecryption : public AesGCMEncryption {
 public:
-	AesGCMDecryption(AesKey key, AesGCMIV iv, btring aad)
-		:AesGCMEncryption(key,iv,aad){
-	};
+	AesGCMDecryption(AesKey key, AesGCMIV iv, btring aad);
 
 protected:
 
-	virtual void handle(const char* buf, char* out, size_t len) {
-		ghash((const uint8_t*)buf, len);
-		gctr(buf, out, len);
-	}
-	virtual std::pair<btring, btring> endinput(uint8_t* buf, uint8_t len) {
-
-		if (len != 0) {
-			//需要手动填充然后删除那一部分
-			char tmp[16] = { 0 };
-			char tmpout[16] = { 0 };
-			memcpy(tmp, buf, len);
-			gctr(tmp, tmpout, 16);
-			btring b_tmpout(tmpout, len);
-			this->_result.append(b_tmpout);
-			ghash((const uint8_t*)buf, len);
-		}
-		btring res = std::move(_result);
-
-		//cal tag
-
-		uint8_t len_buf[16];
-		U64TOCHAR(len_buf, _aad.size() * 8);
-		U64TOCHAR(len_buf + 8, res.size() * 8);
-		ghash(len_buf, sizeof(len_buf));
-
-		char tag[16];
-		memcpy(J0, J0_begin, 16);
-		gctr((const char*)S, tag, sizeof(S));
-		btring _tag(tag, 16);
-		this->_original_iv++;
-
-		return std::make_pair(_tag, res);
-	}
-
+	virtual void handle(const char* buf, char* out, size_t len);
+	virtual std::pair<btring, btring> endinput(uint8_t* buf, uint8_t len);
 };
-
 
 enum CryptoMode 
 {
@@ -752,7 +357,6 @@ public:
 	typedef AesGCMEncryption Encryption;
 	typedef AesGCMDecryption Decryption;
 };
-
 
 template<typename TRet>
 void AesBuffer<TRet>::add(const char* data, size_t data_len) {
