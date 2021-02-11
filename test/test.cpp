@@ -7,8 +7,8 @@ using namespace nap;
 #ifdef WINDOWS
 	#pragma warning(disable:4267)
 	#pragma warning(disable:4819)
+#include <conio.h>
 #endif
-
 
 
 bool btring_test() {
@@ -384,6 +384,8 @@ bool md5(vector<string>& n) {
 
 
 int main() {
+
+
 	assert(btring_test());
 	assert(net_test());
 
@@ -477,6 +479,11 @@ int main() {
 	//auto end = steady_clock::now();
 	//auto tt = duration_cast<microseconds>(end - start);
 	//cout << "³ÌÐòÓÃÊ±=" << tt.count()/1000 << " MS" << endl;
+
+#ifdef WINDOWS
+
+	_getch();
+#endif
 
 	return 0;
 }

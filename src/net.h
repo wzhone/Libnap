@@ -135,7 +135,6 @@ private:
 	friend class tcpseraccept;
 }; 
 
-//基于tcp的服务器/客户端连接管理器
 
 class tcpserver {
 public:
@@ -172,7 +171,7 @@ public:
 	tcpseraccept& operator=(tcpseraccept&) = delete;
 private:
 	tcpseraccept(socket_t, sockaddr_in);
-	tcpseraccept() { /*用于无效的accept返回*/ };
+	tcpseraccept() { /*invalid ret value*/ };
 
 	napcom* easycomm = nullptr;
 	struct sockaddr_in sd = {};
@@ -188,10 +187,9 @@ public:
 	tcpclient(const tcpclient&) = delete;
 	tcpclient& operator=(tcpclient&) = delete;
 
-	//连接服务器
+	//connect server
 	bool connect();
 
-	//获取自己的napcom
 	inline napcom* communicate() { return easycomm; }
 
 private:
