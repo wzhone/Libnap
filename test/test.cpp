@@ -480,10 +480,9 @@ int main() {
 	//auto tt = duration_cast<microseconds>(end - start);
 	//cout << "³ÌĞòÓÃÊ±=" << tt.count()/1000 << " MS" << endl;
 
-#ifdef WINDOWS
-
-	_getch();
-#endif
+//#ifdef WINDOWS
+//	_getch();
+//#endif
 
 	return 0;
 }
