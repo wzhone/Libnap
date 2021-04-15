@@ -23,7 +23,7 @@ A Cross-Platform **LIB**rary of **N**etwork **AP**plication tools
 ### Make (Linux)
 ------
 ```bash
-$ git clone https://github.com/staticn/libnap.git
+$ git clone https://github.com/wzhone/libnap.git
 $ cd ./libnap
 $ make
 $ make install
@@ -35,7 +35,7 @@ $ make install
 ### Visual Studio (Windows)
 ------
 ```powershell
-$ git clone https://github.com/staticn/libnap.git
+$ git clone https://github.com/wzhone/libnap.git
 $ cd ./libnap/win
 $ ./libnap.sln
 ```
