@@ -15,3 +15,4 @@ libnap: $(OBJ)
 
 clean:
 	rm -f *.o
+
