@@ -94,7 +94,7 @@ bool base64(vector<string>& n) {
 
 bool aes_cbc(vector<string>& n) {
 
-	//¼ÓÃÜ¹ý³Ì
+	//ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½
 	AES<CBC_Mode>::Encryption en128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
 	AES<CBC_Mode>::Encryption en192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
 	AES<CBC_Mode>::Encryption en256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
@@ -115,7 +115,7 @@ bool aes_cbc(vector<string>& n) {
 	if (!(Base64::encode(res192) == n[6])) return false;
 	if (!(Base64::encode(res256) == n[7]))  return false;
 
-	//½âÃÜ¹ý³Ì
+	//ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½
 	AES<CBC_Mode>::Decryption de128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
 	AES<CBC_Mode>::Decryption de192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
 	AES<CBC_Mode>::Decryption de256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
@@ -142,7 +142,7 @@ bool aes_cbc(vector<string>& n) {
 
 bool aes_ctr(vector<string>& n) {
 
-	//¼ÓÃÜ¹ý³Ì
+	//ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½
 	AES<CTR_Mode>::Encryption en128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
 	AES<CTR_Mode>::Encryption en192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
 	AES<CTR_Mode>::Encryption en256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
@@ -164,7 +164,7 @@ bool aes_ctr(vector<string>& n) {
 	if (!(Base64::encode(res192) == n[6])) return false;
 	if (!(Base64::encode(res256) == n[7]))  return false;
 
-	//½âÃÜ¹ý³Ì
+	//ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½
 	AES<CTR_Mode>::Decryption de128(AesKey(n[1].c_str(), 16), AesIV((char*)n[4].c_str()));
 	AES<CTR_Mode>::Decryption de192(AesKey(n[2].c_str(), 24), AesIV((char*)n[4].c_str()));
 	AES<CTR_Mode>::Decryption de256(AesKey(n[3].c_str(), 32), AesIV((char*)n[4].c_str()));
@@ -190,7 +190,7 @@ bool aes_ctr(vector<string>& n) {
 }
 
 bool aes_ecb(vector<string>& n) {
-	//¼ÓÃÜ¹ý³Ì
+	//ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½
 	AES<ECB_Mode>::Encryption en128(AesKey(n[1].c_str(), 16));
 	AES<ECB_Mode>::Encryption en192(AesKey(n[2].c_str(), 24));
 	AES<ECB_Mode>::Encryption en256(AesKey(n[3].c_str(), 32));
@@ -211,7 +211,7 @@ bool aes_ecb(vector<string>& n) {
 	if (!(Base64::encode(res192) == n[5])) return false;
 	if (!(Base64::encode(res256) == n[6]))  return false;
 
-	//½âÃÜ¹ý³Ì
+	//ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½
 	AES<ECB_Mode>::Decryption de128(AesKey(n[1].c_str(), 16));
 	AES<ECB_Mode>::Decryption de192(AesKey(n[2].c_str(), 24));
 	AES<ECB_Mode>::Decryption de256(AesKey(n[3].c_str(), 32));
@@ -237,7 +237,7 @@ bool aes_ecb(vector<string>& n) {
 }
 
 bool aes_gcm(vector<string>& n) {
-	//¼ÓÃÜ¹ý³Ì
+	//ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½
 	AES<GCM_Mode>::Encryption en128(AesKey(n[3].c_str(), 16), AesGCMIV(n[2].c_str()), n[1]);
 	AES<GCM_Mode>::Encryption en192(AesKey(n[4].c_str(), 24), AesGCMIV(n[2].c_str()), n[1]);
 	AES<GCM_Mode>::Encryption en256(AesKey(n[5].c_str(), 32), AesGCMIV(n[2].c_str()), n[1]);
@@ -263,7 +263,7 @@ bool aes_gcm(vector<string>& n) {
 	if (Hex::encode(res192.first) != n[10])  return false;
 	if (Hex::encode(res256.first) != n[11])  return false;
 
-	//½âÃÜ¹ý³Ì
+	//ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½
 	AES<GCM_Mode>::Decryption de128(AesKey(n[3].c_str(), 16), AesGCMIV(n[2].c_str()), n[1]);
 	AES<GCM_Mode>::Decryption de192(AesKey(n[4].c_str(), 24), AesGCMIV(n[2].c_str()), n[1]);
 	AES<GCM_Mode>::Decryption de256(AesKey(n[5].c_str(), 32), AesGCMIV(n[2].c_str()), n[1]);
@@ -409,7 +409,7 @@ int main() {
 	//btring res = en128.end();
 	//cout << Base64::encode(res);
 	//if (Base64::encode(res) != "vIt2sO19BJIiqzqbFXe24A==") {
-	//	cout << "½á¹û²»¶Ô";
+	//	cout << "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½";
 	//	return -1;
 	//}
 
@@ -417,7 +417,7 @@ int main() {
 	//de128.add(res);
 	//btring res2 = de128.end();
 	//if (res2 != "helloworld") {
-	//	cout << "½á¹û²»¶Ô";
+	//	cout << "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½";
 	//	return -1;
 	//}
 
@@ -440,7 +440,7 @@ int main() {
 	//auto end = steady_clock::now();
 
 	//auto tt = duration_cast<microseconds>(end - start);
-	//cout << "³ÌÐòÓÃÊ±=" << tt.count()/1000 << " MS" << endl;
+	//cout << "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±=" << tt.count()/1000 << " MS" << endl;
 	//cout << en128.end().size();
 
 	////2240
@@ -478,7 +478,7 @@ int main() {
 
 	//auto end = steady_clock::now();
 	//auto tt = duration_cast<microseconds>(end - start);
-	//cout << "³ÌÐòÓÃÊ±=" << tt.count()/1000 << " MS" << endl;
+	//cout << "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±=" << tt.count()/1000 << " MS" << endl;
 
 //#ifdef WINDOWS
 //	_getch();

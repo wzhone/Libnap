@@ -26,7 +26,7 @@ checkdir:
 fast: 
 	make -j -s build
 
-install: libnap uninstall
+install: uninstall
 	mkdir /usr/local/include/libnap
 	cp ./src/*.h /usr/local/include/libnap
 	cp ./output/libnap.a /usr/local/lib/libnap.a
