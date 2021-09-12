@@ -26,22 +26,5 @@ jobs:
         msbuild ./libnap.sln -p:Configuration=${{ matrix.method }} -p:Platform=${{ matrix.platform }}
         ..\output\vstemp\test\${{ matrix.platform }}\${{ matrix.method }}\test.exe
         
-        
-  win2016_build:
-    strategy:
-      matrix:
-        platform: [x86,x64]
-        method: [Debug,Release]
-      
-    runs-on: windows-2016
-    steps:
-    - uses: actions/checkout@v2
-    - uses: microsoft/setup-msbuild@v1
-    - name: Build
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: |
-        cd .\win
-        msbuild ./libnap.sln -p:Configuration=${{ matrix.method }} -p:Platform=${{ matrix.platform }}
-        ..\output\vstemp\test\${{ matrix.platform }}\${{ matrix.method }}\test.exe
 
 
