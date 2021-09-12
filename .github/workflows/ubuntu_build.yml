@@ -12,7 +12,7 @@ jobs:
     - name: make
       run: |
         make all
-        make install
+        sudo make install
 
   ubuntu20_04_build:
     runs-on: ubuntu-20.04
@@ -21,4 +21,4 @@ jobs:
     - name: make
       run: |
         make all
-        make install
+        sudo make install
