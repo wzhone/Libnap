@@ -91,8 +91,8 @@ Windows SDK Version >= 10.0
 
 ##### Linux
 ```
-G++ Version >= 4.8.5
-Make Version >= 3.8
+G++ Version >= 9.3.0
+Make Version >= 4.3
 ```
 
 

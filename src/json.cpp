@@ -564,7 +564,10 @@ void JsonStringify::dealArray(JsonNode& node, btring& str){
 		strifyValue(n, str);
 		str += ",";
 	}
-	str[str.size()-1] = ']';
+	if (node.size()==0)
+		str += "]";
+	else
+		str[str.size()-1] = ']';
 }
 
 void JsonStringify::dealObject(JsonNode& node, btring& str){
@@ -573,7 +576,10 @@ void JsonStringify::dealObject(JsonNode& node, btring& str){
 		strifyKV(n, str);
 		str += ",";
 	}
-	str[str.size() - 1] = '}';
+	if (node.size()==0)
+		str += "}";
+	else
+		str[str.size()-1] = '}';
 }
 
 _NAP_END
