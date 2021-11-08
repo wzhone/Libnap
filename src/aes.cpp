@@ -1,4 +1,5 @@
 #include "aes.h"
+#ifdef BUILD_AES
 _NAP_BEGIN
 
 
@@ -165,7 +166,7 @@ const uint8_t aes_inv_s_box[256] = {
 	Nk  4,6,8    Nk * word(32bit) = Key Length
 	Nr(number of rounds) : 10,12,14
 	The Key Expansion generates a total of Nb(4) (Nr + 1) words
-	Nb (Nr + 1) = 44,52,60 £¨word£©
+	Nb (Nr + 1) = 44,52,60 ï¿½ï¿½wordï¿½ï¿½
 */
 
 //static const uint8_t aes_3mt[4][4] = {
@@ -216,12 +217,12 @@ AesKey::AesKey(const char* key, size_t length){
 	}
 }
 AesKey::AesKey(const char* key, Type _type) {
-	//Ã»·¨ÅÐ¶Ï±ß½ç
+	//Ã»ï¿½ï¿½ï¿½Ð¶Ï±ß½ï¿½
 	_init(key, _type);
 }
 AesKey::AesKey(const btring& key, Type _type){
 
-	//·ÀÖ¹·ÃÎÊ¹ý½ç
+	//ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½
 	btring _key = key;
 	switch (_type) {
 	case Type::T_128: _key.resize(16); break;
@@ -282,8 +283,8 @@ void AesKey::_key_expansion(const uint8_t* key) {
 	//Nk = key_length
 
 	/*
-		½«ÃÜÔ¿°´ÕÕË³Ðò¿½±´½øÃÜÔ¿¶ÓÁÐÀï
-		Ã¿´Î¿½±´ËÄ¸ö×Ö½ÚµÄÃÜÔ¿½øÈëµ½Ò»¸öu32Êý×éÀï
+		ï¿½ï¿½ï¿½ï¿½Ô¿ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ò¿½±ï¿½ï¿½ï¿½ï¿½ï¿½Ô¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		Ã¿ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½Ö½Úµï¿½ï¿½ï¿½Ô¿ï¿½ï¿½ï¿½ëµ½Ò»ï¿½ï¿½u32ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	*/
 	for (uint32_t i = 0; i < Nk; i++) {
 		int t = i * 4;
@@ -298,7 +299,7 @@ void AesKey::_key_expansion(const uint8_t* key) {
 		return v;
 	};
 
-	//Ñ­»·×óÒÆ8bitÈ»ºó×Ö½ÚÌæ»»
+	//Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½8bitÈ»ï¿½ï¿½ï¿½Ö½ï¿½ï¿½æ»»
 	auto mix = [subword](uint32_t n)-> uint32_t {
 		uint32_t ret = 0, _ret;
 
@@ -312,11 +313,11 @@ void AesKey::_key_expansion(const uint8_t* key) {
 	};
 
 	/*
-		Ìî³äÆäËûµÄ¿ÕÓàÇøÓò
-		¼ÆËãÃÜÔ¿
+		ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¿
 	*/
 	for (uint32_t i = Nk; i < exp_length; i++) {
-		uint32_t temp = _keys_e[i - 1]; //ÉÏÒ»¸öu32
+		uint32_t temp = _keys_e[i - 1]; //ï¿½ï¿½Ò»ï¿½ï¿½u32
 		if (i % Nk == 0) {
 			temp = mix(temp) ^ aes_rcon[i / Nk];
 		}
@@ -341,8 +342,8 @@ void AesKey::_key_expansion(const uint8_t* key) {
 #endif
 
 
-	//¼ÆËã½âÃÜÃÜÔ¿
-	//¼´d[0-3]=e[40-43]
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¿
+	//ï¿½ï¿½d[0-3]=e[40-43]
 	uint32_t* p_e = _keys_e;
 	uint32_t* p_d = _keys_d + exp_length - 4;
 
@@ -396,7 +397,7 @@ void AesFun::g_num128(const uint8_t* x,const uint8_t* y, uint8_t* z) {
 }
 
 // -- replaced by lookup table 
-//static inline uint8_t g_num(uint8_t u, uint8_t v) {//Á½×Ö½ÚµÄÙ¤ÂÞ»ªÓò³Ë·¨ÔËËã
+//static inline uint8_t g_num(uint8_t u, uint8_t v) {//ï¿½ï¿½ï¿½Ö½Úµï¿½Ù¤ï¿½Þ»ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½
 //	uint8_t p = 0;
 //	for (int i = 0; i < 8; i++) {
 //		if (u & 0x01) {
@@ -447,7 +448,7 @@ void AesFun::xor_128block(uint8_t* dst, const uint8_t* src)  {
 ////-------------------------------------------------------------AesPadding
 
 int AesPadding::addPadding(char* buf, uint8_t len) {
-	uint8_t fill = 16 - len; //¼ÆËãÌî³ä³¤¶È
+	uint8_t fill = 16 - len; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä³¤ï¿½ï¿½
 
 	switch (this->_padding_type) {
 	case AesPaddingType::None:
@@ -471,7 +472,7 @@ int AesPadding::addPadding(char* buf, uint8_t len) {
 	return fill;
 }
 
-//lenÊÇbufµÄ³¤¶È£¬ºÍaddPadding²»Í¬,·µ»ØÌî³ä³¤¶ÈÈ´²»¶ÔÌî³ä½øÐÐ²Ù×÷
+//lenï¿½ï¿½bufï¿½Ä³ï¿½ï¿½È£ï¿½ï¿½ï¿½addPaddingï¿½ï¿½Í¬,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä³¤ï¿½ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½
 int AesPadding::removePadding(char* buf, uint8_t len) {
 	switch (this->_padding_type) {
 	case AesPaddingType::None:
@@ -512,7 +513,7 @@ void AesECBEncryption::handle(const char* buf, char* out, size_t len){
 
 btring AesECBEncryption::endinput(uint8_t* buf, uint8_t len) {
 	int pad = this->addPadding((char*)buf, (uint8_t)len);
-	this->add((char*)buf + 16 - pad, pad); // ÐèÒª×ÓÀàÖØÐÂÌí¼ÓÒ»ÏÂÕâ²¿·Ö
+	this->add((char*)buf + 16 - pad, pad); // ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½â²¿ï¿½ï¿½
 	btring res = std::move(_result);
 	return res;
 }
@@ -574,7 +575,7 @@ void AesCBCEncryption::handle(const char* buf, char* out, size_t len) {
 
 btring AesCBCEncryption::endinput(uint8_t* buf, uint8_t len) {
 	int pad = this->addPadding((char*)buf, (uint8_t)len);
-	this->add((char*)buf + 16 - pad, pad); // ÐèÒª×ÓÀàÖØÐÂÌí¼ÓÒ»ÏÂÕâ²¿·Ö
+	this->add((char*)buf + 16 - pad, pad); // ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½â²¿ï¿½ï¿½
 	btring res = std::move(_result);
 	return res;
 }
@@ -650,14 +651,14 @@ void AesCTREncryption::handle(const char* buf, char* out, size_t len) {
 btring AesCTREncryption::endinput(uint8_t* buf, uint8_t len) {
 
 	if (len != 0) {
-		//ÐèÒªÊÖ¶¯Ìî³äÈ»ºóÉ¾³ýÄÇÒ»²¿·Ö
+		//ï¿½ï¿½Òªï¿½Ö¶ï¿½ï¿½ï¿½ï¿½È»ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½
 		int f = 16 - len;
 		this->add((const char*)buf + len, f);
 		this->_result.resize(this->_result.size() - f);
 	}
 
 	btring res = std::move(_result);
-	this->_original_counter = this->_counter; //CTRÐèÒª±£´æ¼ÆÊýÆ÷£¬·ÀÖ¹±»»¹Ô­
+	this->_original_counter = this->_counter; //CTRï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½Ô­
 	return res;
 }
 
@@ -703,8 +704,8 @@ void AesGCMEncryption::calculate_j0() {
 	//	 */
 	//	memset(J0, 0, 16);
 	//	ghash(H, iv, iv_len, J0);
-	//	//U64TOCHAR(len_buf, 0);                   //¸ß8byte Ê¹ÓÃÁË 0 Ìî³ä
-	//	INT32TOCHAR(len_buf + 8, iv_len * 8);      //µÍ8byte Ìî³äÁË  iv_len * 8
+	//	//U64TOCHAR(len_buf, 0);                   //ï¿½ï¿½8byte Ê¹ï¿½ï¿½ï¿½ï¿½ 0 ï¿½ï¿½ï¿½
+	//	INT32TOCHAR(len_buf + 8, iv_len * 8);      //ï¿½ï¿½8byte ï¿½ï¿½ï¿½ï¿½ï¿½  iv_len * 8
 	//	ghash(H, len_buf, sizeof(len_buf), J0);
 	//}
 }
@@ -800,7 +801,7 @@ void AesGCMEncryption::handle(const char* buf, char* out, size_t len) {
 std::pair<btring, btring> AesGCMEncryption::endinput(uint8_t* buf, uint8_t len) {
 
 	if (len != 0) {
-		//ÐèÒªÊÖ¶¯Ìî³äÈ»ºóÉ¾³ýÄÇÒ»²¿·Ö
+		//ï¿½ï¿½Òªï¿½Ö¶ï¿½ï¿½ï¿½ï¿½È»ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½
 		char tmp[16] = { 0 };
 		char tmpout[16] = { 0 };
 		memcpy(tmp, buf, len);
@@ -850,7 +851,7 @@ void AesGCMDecryption::handle(const char* buf, char* out, size_t len) {
 std::pair<btring, btring> AesGCMDecryption::endinput(uint8_t* buf, uint8_t len) {
 
 	if (len != 0) {
-		//ÐèÒªÊÖ¶¯Ìî³äÈ»ºóÉ¾³ýÄÇÒ»²¿·Ö
+		//ï¿½ï¿½Òªï¿½Ö¶ï¿½ï¿½ï¿½ï¿½È»ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½
 		char tmp[16] = { 0 };
 		char tmpout[16] = { 0 };
 		memcpy(tmp, buf, len);
@@ -878,4 +879,4 @@ std::pair<btring, btring> AesGCMDecryption::endinput(uint8_t* buf, uint8_t len) 
 }
 
 _NAP_END
-
+#endif

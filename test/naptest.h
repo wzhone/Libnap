@@ -2,6 +2,7 @@
 #include "libnap.h"
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 using std::vector;
 using std::string;
@@ -11,8 +12,9 @@ class NapTest;
 #define NAPASSERT(expression) if ((expression) == false) return false;
 #define TEST(name,cb) TestManager::instance()->registered(name,cb);
 #define RUN() TestManager::instance()->test();
-#define PRINTRESULT() TestManager::instance()->result();
-
+#define RESULT() TestManager::instance()->result();
+#define TEST_INIT(N,S) TestManager::instance()->init(N,S);
+ 
 struct CaseResult {
 	int caseID = 0;
 	bool pass = false;;
@@ -25,10 +27,13 @@ typedef std::function <bool(vector<string>&)> callback;
 class TestManager {
 public:
 	static TestManager* instance();
-
+	
+	void init(int,char*[]); 
 	void registered(const char*,callback);
 	void test();
-	void result();
+	int result();
+
+	bool verbose = false;
 private:
 	TestManager() {};
 
@@ -45,8 +50,8 @@ public:
 	NapTest(const NapTest& old);
 	~NapTest();
 
-	bool test();
-	void print();
+	bool test(); 
+	void print(); 
 
 	const char* const casename;
 
@@ -57,8 +62,8 @@ protected:
 	char* _buffer;
 	size_t _buffer_size;
 	
-	int _num = 0; //²âÊÔ×ÜÊıÁ¿
-	int _line = 0;//µ¥¸ö²âÊÔ°¸ÀıĞĞÊı
+	int _num = 0;  //æµ‹è¯•æ€»æ•°é‡
+	int _line = 0; //å•ä¸ªæµ‹è¯•æ¡ˆä¾‹è¡Œæ•°
 
 	vector<vector<pair<size_t,size_t>>> _case_pointer;
 	vector<CaseResult> _case_result;

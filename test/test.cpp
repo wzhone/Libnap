@@ -64,6 +64,7 @@ bool btring_test() {
 	return true;
 }
 
+#ifdef BUILD_NET
 bool net_test() {
 	net::init();
 	btring ip("127.0.0.1");
@@ -73,6 +74,9 @@ bool net_test() {
 	assert(net::getsIp(net::getnIp(addr)) ==ip);
 	return true;
 }
+#endif
+
+#ifdef BUILD_HASH
 
 bool base64(vector<string>& n) {
 
@@ -91,6 +95,60 @@ bool base64(vector<string>& n) {
 	return true;
 
 }
+
+bool sha256(vector<string>& n) {
+	SHA256 s;
+	s.add("nouse");
+	s.reset();
+	s.add((const char*)n[0].c_str(), n[0].size());
+	s.add((const char*)n[1].c_str(), n[1].size());
+	btring sha256 = s.calculate();
+	btring sha256_hex = Hex::encode(sha256, false);
+	NAPASSERT(sha256_hex == n[2]);
+	s.reset();
+	s.add((const char*)n[0].c_str(), n[0].size());
+	s.add((const char*)n[1].c_str(), n[1].size());
+	sha256 = s.calculate();
+	sha256_hex = Hex::encode(sha256, false);
+	NAPASSERT(sha256_hex == n[2]);
+	return true;
+}
+
+bool sha1(vector<string>& n) {
+	SHA1 S;
+	S.add("nouse");
+	S.reset();
+	S.add((const char*)n[0].c_str(), n[0].size());
+	btring sha1 = S.calculate();
+	btring sha1_h = Hex::encode(sha1, false);
+	NAPASSERT(sha1_h == n[1]);
+	S.reset();
+	S.add((const char*)n[0].c_str(), n[0].size());
+	sha1 = S.calculate();
+	sha1_h = Hex::encode(sha1, false);
+	NAPASSERT(sha1_h == n[1]);
+	return true;
+}
+
+bool md5(vector<string>& n) {
+	MD5 md5;
+	md5.add("nouse");
+	md5.reset();
+	md5.add(n[0].c_str(), n[0].size());
+	btring result = md5.calculate();
+	result = Hex::encode(result, false);
+	NAPASSERT(result == n[1]);
+	md5.reset();
+	md5.add(n[0].c_str(), n[0].size());
+	result = md5.calculate();
+	result = Hex::encode(result, false);
+	NAPASSERT(result == n[1]);
+	return true;
+}
+
+#endif
+
+#ifdef BUILD_AES
 
 bool aes_cbc(vector<string>& n) {
 
@@ -293,39 +351,9 @@ bool aes_gcm(vector<string>& n) {
 	return true;
 }
 
-bool sha256(vector<string>& n) {
-	SHA256 s;
-	s.add("nouse");
-	s.reset();
-	s.add((const char*)n[0].c_str(), n[0].size());
-	s.add((const char*)n[1].c_str(), n[1].size());
-	btring sha256 = s.calculate();
-	btring sha256_hex = Hex::encode(sha256, false);
-	NAPASSERT(sha256_hex == n[2]);
-	s.reset();
-	s.add((const char*)n[0].c_str(), n[0].size());
-	s.add((const char*)n[1].c_str(), n[1].size());
-	sha256 = s.calculate();
-	sha256_hex = Hex::encode(sha256, false);
-	NAPASSERT(sha256_hex == n[2]);
-	return true;
-}
+#endif
 
-bool sha1(vector<string>& n) {
-	SHA1 S;
-	S.add("nouse");
-	S.reset();
-	S.add((const char*)n[0].c_str(), n[0].size());
-	btring sha1 = S.calculate();
-	btring sha1_h = Hex::encode(sha1, false);
-	NAPASSERT(sha1_h == n[1]);
-	S.reset();
-	S.add((const char*)n[0].c_str(), n[0].size());
-	sha1 = S.calculate();
-	sha1_h = Hex::encode(sha1, false);
-	NAPASSERT(sha1_h == n[1]);
-	return true;
-}
+#ifdef BUILD_JSON
 
 bool json(vector<string>& n){
 	JsonParser json;
@@ -366,46 +394,56 @@ bool json(vector<string>& n){
 	}
 }
 
-bool md5(vector<string>& n) {
-	MD5 md5;
-	md5.add("nouse");
-	md5.reset();
-	md5.add(n[0].c_str(), n[0].size());
-	btring result = md5.calculate();
-	result = Hex::encode(result, false);
-	NAPASSERT(result == n[1]);
-	md5.reset();
-	md5.add(n[0].c_str(), n[0].size());
-	result = md5.calculate();
-	result = Hex::encode(result, false);
-	NAPASSERT(result == n[1]);
-	return true;
-}
+#endif
+
+int main(int args,char* argv[]) {
+
+	try{
+		TEST_INIT(args,argv);
+		bool r;
+
+		r = btring_test();
+		if (!r) return 101;
+
+		#ifdef BUILD_NET
+			r = net_test();
+			if (!r) return 102;
+		#endif
+
+		#ifdef BUILD_AES
+			TEST("AES-CBC", aes_cbc);
+			TEST("AES-ECB", aes_ecb);
+			TEST("AES-CTR", aes_ctr);
+			TEST("AES-GCM", aes_gcm);
+		#endif
+
+		#ifdef BUILD_HASH
+			TEST("BASE64", base64);
+			TEST("SHA256", sha256);
+			TEST("SHA1", sha1);
+			TEST("MD5", md5);
+		#endif
 
 
-int main() {
+		#ifdef BUILD_JSON
+			TEST("JSON", json);
+		#endif
+		
+		RUN();
 
+		return RESULT();
 
-	assert(btring_test());
-	assert(net_test());
+		// #ifdef WINDOWS
+		// 	_getch();
+		// #endif
 
-	TEST("AES-CBC", aes_cbc);
-	TEST("AES-ECB", aes_ecb);
-	TEST("AES-CTR", aes_ctr);
-	TEST("AES-GCM", aes_gcm);
-	TEST("BASE64", base64);
-	TEST("SHA256", sha256);
-	TEST("SHA1", sha1);
-	TEST("JSON", json);
-	TEST("MD5", md5);
-
-	RUN();
-	PRINTRESULT();
-
-
-//#ifdef WINDOWS
-//	_getch();
-//#endif
+	}catch(const std::string& e){
+		std::cerr << e << '\n';
+		return 1;
+	}catch(...){
+		std::cerr << "unknown exception" << '\n';
+		return 2;
+	}
 
 	return 0;
 }

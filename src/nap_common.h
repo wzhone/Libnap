@@ -25,6 +25,7 @@
 #define _NAP_BEGIN namespace nap{
 #define _NAP_END }
 
+
 //#define AESNI
 
 //#define _NAP ::nap::

@@ -1,6 +1,7 @@
 #pragma once
 #include "nap_common.h"
 #include "btring.h"
+#ifdef BUILD_HASH
 _NAP_BEGIN
 
 uint32_t mhash(const char* str, uint32_t len);
@@ -93,3 +94,4 @@ private:
 };
 
 _NAP_END
+#endif

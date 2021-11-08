@@ -1,6 +1,7 @@
 #include "json.h"
 #include <assert.h>
 #include <typeinfo>
+#ifdef BUILD_JSON
 _NAP_BEGIN
 
 #define L_S		'('
@@ -583,4 +584,4 @@ void JsonStringify::dealObject(JsonNode& node, btring& str){
 }
 
 _NAP_END
-
+#endif

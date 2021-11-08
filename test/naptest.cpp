@@ -9,6 +9,7 @@ using namespace chrono;
 
 
 
+
 NapTest::NapTest(const char* name, callback cb):
 	casename(name),_cb(cb){
 
@@ -37,7 +38,7 @@ NapTest::NapTest(const char* name, callback cb):
 
 		tempnum = fscanf(fp, "%[^\n]", buffer);
 		if (2 != sscanf(buffer, "%s = %d", tag, &tempnum)) {
-			throw "Test file format error";
+			throw std::string("Test case file format error");
 			fclose(fp);
 		}
 		fgetc(fp);
@@ -132,7 +133,7 @@ bool NapTest::test(){
 			cout << "---->CATCH  EXCEPTION<----" << endl;
 			cout << "When an exception occurs,you should catch the exception " << endl;
 			cout << "in your test function, catch it and return false to avoid" << endl;
-			cout << "the test being terminated." << endl;
+			cout << "the test prog being terminated." << endl;
 			cout << "---->TEST TERMINATION<----" << endl;
 			throw;
 		}
@@ -150,18 +151,37 @@ bool NapTest::test(){
 }
 
 void NapTest::print(){
-	cout << "Test case item : " << this->casename <<endl;
+	int all = this->_num;
+	int pass = 0;
+	for (int i = 0; i < _num; i++) 
+		if (this->_case_result[i].pass)
+			pass++;
 
-	for (int i = 0; i < _num; i++) {
-		auto& data = this->_case_result[i];
-		if (!data.pass) {
-			cout << "\tItem " << data.caseID << " FAILED !" << endl;
-		} else {
-			cout << "\tItem " << data.caseID << " passed ,";
-			cout << "Ues time : " << data.time << " ms" << endl;
+	char buf[20]= {0};
+	sprintf(buf,"(%d/%d)",pass,all);
+
+	cout << this->casename << buf <<endl;
+
+	if (TestManager::instance()->verbose){
+		for (int i = 0; i < _num; i++) {
+			CaseResult& data = this->_case_result[i];
+			if (!data.pass) {
+				cout << "\tItem " << data.caseID << " FAILED !" << endl;
+			} else {
+				cout << "\tItem " << data.caseID << " passed ,";
+				cout << "Ues time : " << data.time << " ms" << endl;
+			}
+		}
+		cout << endl;
+	}else if ( pass != all){
+		for (int i = 0; i < _num; i++){
+			if (!this->_case_result[i].pass){
+				cout << "\tCase " << this->_case_result[i].caseID << " FAILED" << endl;
+			}
 		}
 	}
-	cout << endl;
+	
+
 }
 
 void NapTest::_init() {
@@ -198,15 +218,27 @@ void NapTest::_init() {
 
 }
 
-static TestManager* _instance = nullptr;
+
 
 
 TestManager* TestManager::instance() {
+	static TestManager* _instance = nullptr;
+
 	if (_instance == nullptr) {
 		_instance = new TestManager;
 	}
 	return _instance;
 }
+
+void TestManager::init(int args,char* argv[]){
+	for (int i=0;i<args;i++){
+		auto p = std::string(argv[i]);
+		if (p == "-v"){
+			this->verbose = true;
+		}
+	}
+}
+
 
 void TestManager::registered(const char* n, callback cb){
 	NapTest temp(n, cb);
@@ -223,19 +255,24 @@ void TestManager::test(){
 	return;
 }
 
-void TestManager::result(){
+int TestManager::result(){
+	int err = 0;
 	for (auto& n : this->_tests) {
 		n.print();
 	}
 	
-	cout << "-----------------------------------------\n|\t\t\t\t\t|\n";
+	cout << "---------------------\n";
 	if (this->_failure.empty()) {
-		cout << '|' << "\tAll tests PASSED (OK)\t\t|";
+		cout << "All tests PASSED (OK)";
+		err = 0;
 	} else {
-		cout << '|' << "\tFailed test cases: (FAIL)\t\t|";
+		cout << "Failed test cases: ( ";
 		for (auto& n : this->_failure) {
-			cout << "\n|\t\t --> " << n <<" <--";
+			cout << n << " ";
 		}
+		cout<<")";
+		err = 100;
 	}
-	cout << "\n|\t\t\t\t\t|\n-----------------------------------------\n";
+	cout<<endl;
+	return err;
 }

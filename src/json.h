@@ -2,6 +2,7 @@
 #include "nap_common.h"
 #include "btring.h"
 #include <exception>
+#ifdef BUILD_JSON
 _NAP_BEGIN
 
 class JsonNode;
@@ -164,4 +165,4 @@ protected:
 };
 
 _NAP_END
-
+#endif
