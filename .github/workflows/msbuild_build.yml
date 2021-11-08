@@ -12,7 +12,7 @@ jobs:
   win2019_build:
     strategy:
       matrix:
-        platform: [x86,x64]
+        platform: [Win32,x64]
         method: [Debug,Release]
       
     runs-on: windows-2019
@@ -22,8 +22,8 @@ jobs:
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        mkdir -p build
-        cd build
+        mkdir -p build_${{ matrix.platform }}
+        cd build_${{ matrix.platform }}
         cmake .. -A ${{ matrix.platform }}
         cmake --build . --config ${{ matrix.method }}
         .\test\${{ matrix.method }}\test.exe
