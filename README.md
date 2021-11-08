@@ -1,5 +1,5 @@
 
-    
+​    
 <pre>
  ___       ___  ________  ________   ________  ________   
 |\  \     |\  \|\   __  \|\   ___  \|\   __  \|\   __  \  
@@ -29,58 +29,39 @@ A Cross-Platform **LIB**rary of **N**etwork **AP**plication tools
 
 <br/>
 
-## 1. 构建
+## 通过CMake进行构建
 
 <br/>
 
-### Make (Linux)
+### Linux
 ------
 ```bash
 $ git clone https://github.com/wzhone/libnap.git
 $ cd ./libnap
-$ make
-$ make install
+$ mkdir -p build
+$ cd build
+$ cmake ..
+$ make -j `nproc`
+$ ./test/test
 ```
 
 <br/>
 
 
-### Visual Studio (Windows)
+### Windows
 ------
 ```powershell
 $ git clone https://github.com/wzhone/libnap.git
-$ cd ./libnap/win
-$ ./libnap.sln
-```
-
-<br/>
-<br/>
-
-## 2. 安装
-
-编译成功后，在output文件夹下，会有需要的静态库文件和头文件。
-
-<br/>
-
-## 3. 其他
-
-<br/>
-
- **在Linux中，可以使用以下make命令根据不同需求进行编译**
-
-------
-```bash
-make / make all : 编译libnap 编译测试文件 并运行测试
-make build : 编译libnap 编译测试文件
-make test : 编译测试文件
-make libnap : 编译libnap
-make clean : 清除编译的文件
-make fast : 启用多核快速安静编译
+$ mkdir build
+$ cd build
+$ cmake .. -A x64
+$ cmake --build . --config Release
+$ .\test\Release\test.exe
 ```
 
 <br/>
 
-##  4. 平台需求
+##  平台需求
 ------
 
 ##### Windows
@@ -93,6 +74,6 @@ Windows SDK Version >= 10.0
 ```
 G++ Version >= 9.3.0
 Make Version >= 4.3
+CMake version >= 3.1
 ```
-
 

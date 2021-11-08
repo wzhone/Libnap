@@ -1,10 +1,28 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 PROJECT(Libnap)
-set (CMAKE_CXX_STANDARD 17)
+
+# use C++ Standard 17
+SET (CMAKE_CXX_STANDARD 17)
+
+# only works on single-configuration generators 
+SET (CMAKE_BUILD_TYPE "Release")
+
+# only works on multi-config generators
+SET (CMAKE_CONFIGURATION_TYPES "Debug;Release")
+
+# platform
+IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    SET (PLATFORM , "linux")
+    MESSAGE(STATUS  "now platform: ${CMAKE_SYSTEM_NAME}")
+ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    SET (PLATFORM , "windows")
+    MESSAGE(STATUS  "now platform: ${CMAKE_SYSTEM_NAME}")
+ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+	MESSAGE(FATAL_ERROR "support platform: ${CMAKE_SYSTEM_NAME}")
+ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 
-SET(CMAKE_BUILD_TYPE "Debug")
-
+# specific module switch
 option(BUILD_AES "build aes module" ON)
 if (BUILD_AES)
     add_definitions(-DBUILD_AES)
@@ -36,5 +54,3 @@ if (BUILD_TEST)
 endif()
 
 ADD_SUBDIRECTORY( ./src )
-
-

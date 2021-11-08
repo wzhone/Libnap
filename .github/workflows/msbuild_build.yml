@@ -22,9 +22,8 @@ jobs:
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        cd .\win
-        msbuild ./libnap.sln -p:Configuration=${{ matrix.method }} -p:Platform=${{ matrix.platform }}
-        ..\output\vstemp\test\${{ matrix.platform }}\${{ matrix.method }}\test.exe
-        
-
-
+        mkdir -p build
+        cd build
+        cmake .. -A ${{ matrix.platform }}
+        cmake --build . --config ${{ matrix.method }}
+        .\test\${{ matrix.method }}\test.exe
