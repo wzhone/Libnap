@@ -1,5 +1,4 @@
 #include "net.h"
-#ifdef BUILD_NET
 _NAP_BEGIN
 
 
@@ -334,4 +333,3 @@ tcpseraccept::tcpseraccept(tcpseraccept&& old) noexcept {
 
 
 _NAP_END
-#endif

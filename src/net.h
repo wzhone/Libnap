@@ -1,7 +1,6 @@
 #pragma once
 #include "nap_common.h"
 #include "btring.h"
-#ifdef BUILD_NET
 _NAP_BEGIN
 class net;
 class napcom;
@@ -202,4 +201,3 @@ private:
 };
 
 _NAP_END
-#endif

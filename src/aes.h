@@ -1,7 +1,6 @@
 #pragma once
 #include "nap_common.h"
 #include "btring.h"
-#ifdef BUILD_AES
 
 
 
@@ -567,4 +566,3 @@ void AesBuffer<TRet>::add(const char* data, size_t data_len) {
 
 
 _NAP_END
-#endif

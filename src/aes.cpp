@@ -1,5 +1,4 @@
 #include "aes.h"
-#ifdef BUILD_AES
 _NAP_BEGIN
 
 
@@ -879,4 +878,3 @@ std::pair<btring, btring> AesGCMDecryption::endinput(uint8_t* buf, uint8_t len) 
 }
 
 _NAP_END
-#endif

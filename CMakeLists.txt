@@ -13,20 +13,16 @@ SET (CMAKE_CONFIGURATION_TYPES "Debug;Release")
 # platform
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
     SET (PLATFORM , "linux")
-    MESSAGE(STATUS  "now platform: ${CMAKE_SYSTEM_NAME}")
+    MESSAGE(STATUS  "Platform: ${CMAKE_SYSTEM_NAME}")
 ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
     SET (PLATFORM , "windows")
-    MESSAGE(STATUS  "now platform: ${CMAKE_SYSTEM_NAME}")
+    MESSAGE(STATUS  "Platform: ${CMAKE_SYSTEM_NAME}")
 ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 	MESSAGE(FATAL_ERROR "support platform: ${CMAKE_SYSTEM_NAME}")
-ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-
+ENDIF ()
 
 # specific module switch
-option(BUILD_AES "build aes module" ON)
-if (BUILD_AES)
-    add_definitions(-DBUILD_AES)
-endif()
+include(CMakeDependentOption)
 
 option(BUILD_HASH "build hash module" ON)
 if (BUILD_HASH)
@@ -48,9 +44,14 @@ if (BUILD_THREADPOOL)
     add_definitions(-DBUILD_THREADPOOL)
 endif()
 
+CMAKE_DEPENDENT_OPTION(BUILD_AES "build aes module" ON "BUILD_HASH;" OFF)
+if (BUILD_AES)
+    add_definitions(-DBUILD_AES)
+endif()
+
 option(BUILD_TEST "build test" ON)
 if (BUILD_TEST)
     ADD_SUBDIRECTORY( ./test )
 endif()
 
-ADD_SUBDIRECTORY( ./src )
+ADD_SUBDIRECTORY( ./src ./libnap )

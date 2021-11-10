@@ -398,6 +398,11 @@ bool json(vector<string>& n){
 
 int main(int args,char* argv[]) {
 
+
+
+
+	return 0;
+
 	try{
 		TEST_INIT(args,argv);
 		bool r;
@@ -412,7 +417,7 @@ int main(int args,char* argv[]) {
 
 		#ifdef BUILD_AES
 			TEST("AES-CBC", aes_cbc);
-			TEST("AES-ECB", aes_ecb);
+			TEST("AES-ECB", aes_ecb); 
 			TEST("AES-CTR", aes_ctr);
 			TEST("AES-GCM", aes_gcm);
 		#endif

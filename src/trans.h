@@ -1,7 +1,6 @@
 #pragma once
 #include "nap_common.h"
 #include "btring.h"
-#ifdef BUILD_HASH
 _NAP_BEGIN
 
 class Hex {
@@ -34,4 +33,3 @@ private:
 
 
 _NAP_END
-#endif

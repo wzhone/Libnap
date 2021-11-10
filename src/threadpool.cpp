@@ -1,5 +1,4 @@
 #include "threadpool.h"
-#ifdef BUILD_THREADPOOL
 _NAP_BEGIN
 
 using std::unique_lock;
@@ -50,4 +49,3 @@ ThreadPool::~ThreadPool(){
 
 
 _NAP_END
-#endif

@@ -2,7 +2,6 @@
 #include "nap_common.h"
 #include "btring.h"
 #include <exception>
-#ifdef BUILD_JSON
 _NAP_BEGIN
 
 class JsonNode;
@@ -35,19 +34,20 @@ class JsonNode {
 public:
 
 	explicit JsonNode(JsonType = JsonType::Null);
+	
 	~JsonNode();
-	inline JsonType type();
+	inline JsonType type() const;
 
 	 //Getter
-	int asInt();
-	long long asLong();
-	double asFloat();
-	std::string asString();
-	btring asBtring();
-	bool asBool();
+	int asInt() const;
+	long long asLong() const;
+	double asFloat() const;
+	std::string asString() const;
+	btring asBtring() const;
+	bool asBool() const;
 	JsonNode& operator[](size_t index);
 	JsonNode& operator[](const btring& key);
-	size_t size() { return this->_values.size(); }
+	size_t size() const { return this->_values.size(); }
 	bool has(size_t index);
 	bool has(const btring& key);
 
@@ -61,6 +61,8 @@ public:
 
 	template <class T> inline JsonNode& operator=(const T&);
 	
+
+
 protected:
 
 	//Basic type assignment
@@ -97,13 +99,22 @@ inline JsonNode& JsonNode::operator=(const T& value) {
 	}else {
 		_type = JsonType::String;
 	}
+
 	_bindata = btring::from(value);
 	return *this;
 }
 
 template<>
-inline JsonNode& JsonNode::operator=(const JsonNode& old) {
-	//Keep your own 'this->_key' //this->_key = old._key;
+inline JsonNode& JsonNode::operator=(const JsonNode& old){
+	//Keep your own 'this->_key' 
+	//this->_key = old._key;
+	// if (this->_key == "")
+	// 	this->_key = old._key;
+	// std::cout<< "--" << this->_key<<"--"<< std::endl;
+	// std::cout<< "--" << old._key <<"--"<< std::endl;
+
+	std::cout<< "--==" << old._key <<"--"<< std::endl;
+
 	this->_bindata = old._bindata;
 	this->_type = old._type;
 	this->_values = old._values;
@@ -111,7 +122,7 @@ inline JsonNode& JsonNode::operator=(const JsonNode& old) {
 }
 
 
-inline JsonType JsonNode::type(){
+inline JsonType JsonNode::type() const{
 	return this->_type;
 }
 
@@ -153,16 +164,15 @@ private:
 //Convert class to json string
 class JsonStringify {
 public:
-	btring stringify(JsonNode&);
+	btring stringify(const JsonNode&);
 
 protected:
 	
-	void strifyKV(JsonNode&, btring&);
-	void strifyValue(JsonNode&, btring&);
-	void dealArray(JsonNode&, btring&);
-	void dealObject(JsonNode&, btring&);
+	void strifyKV(const JsonNode&, btring&);
+	void strifyValue(const JsonNode&, btring&);
+	void dealArray(const JsonNode&, btring&);
+	void dealObject(const JsonNode&, btring&);
 
 };
 
 _NAP_END
-#endif

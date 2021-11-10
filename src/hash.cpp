@@ -1,5 +1,4 @@
 #include "hash.h"
-#ifdef BUILD_HASH
 _NAP_BEGIN
 
 uint32_t mhash(const char* str, uint32_t len){
@@ -573,4 +572,3 @@ void SHA1::_sha1_transform(){
 }
 
 _NAP_END
-#endif

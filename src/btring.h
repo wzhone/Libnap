@@ -3,6 +3,80 @@
 _NAP_BEGIN
 
 
+// template<typename T,typename S>
+// struct NapShareData{
+
+// 	NapData(){}
+// 	NapData(const NapData&) = delete;
+// 	NapData(NapData&&) = delete;
+// 	~NapData(){};
+	
+// 	void acquire(){
+// 		this->_count++;
+// 	}
+
+// 	void release(){
+// 		this->_count--;
+// 		assert(this->_count >= 0);
+// 		if (this->_count == 0){
+// 			this->destory();
+// 		}
+// 	}
+
+// 	void destory(){
+// 		if (this->_data != nullptr)
+// 			delete [] this->data;
+// 		this->data = nullptr;
+
+// 		delete this;
+// 	}
+
+// 	NapData* copy(){
+// 		NapData* _data;
+
+// 	}
+
+
+// 	std::atomic<S> _count = 1;	  // _count
+// 	std::atomic<S> _size = 0;	  // the size of data
+// 	std::atomic<S> _capacity = 0;  // the capacity of data buffer
+// 	std::atomic<T>* _data = nullptr;
+
+// };
+
+
+// /*
+// 	This class can only allocate objects on the heap.
+// */
+// template<typename T,typename S>
+// class BtringShareData{
+// public:
+
+
+// 	BtringShareData* copy();
+
+
+
+// 	~BtringShareData();
+// protected:
+
+	
+
+// private:
+
+	
+// 	NapData* _data = nullptr;
+	
+// };
+
+
+// template<typename T,typename S>
+// BtringShareData<T,S>* BtringShareData<T,S>::copy(){
+// 	T* _temp = new T[this->_size];
+
+	
+
+// }
 
 class btring {
 public:
@@ -130,5 +204,13 @@ template<>
 inline std::string btring::to() const {
 	return this->toStdString();
 }
+
+
+
+
+
+
+
+
 
 _NAP_END

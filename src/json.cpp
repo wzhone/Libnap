@@ -1,7 +1,6 @@
 #include "json.h"
 #include <assert.h>
 #include <typeinfo>
-#ifdef BUILD_JSON
 _NAP_BEGIN
 
 #define L_S		'('
@@ -23,19 +22,19 @@ JsonNode::~JsonNode() {
 
 JsonNode::JsonNode(JsonType t) : _type(t) {}
 
-int JsonNode::asInt(){
+int JsonNode::asInt() const{
 	return _bindata.to<int>();
 }
-long long JsonNode::asLong(){
+long long JsonNode::asLong() const{
 	return _bindata.to<long long>();
 }
-double JsonNode::asFloat(){
+double JsonNode::asFloat() const{
 	return _bindata.to<double>();
 }
-std::string JsonNode::asString(){
+std::string JsonNode::asString() const{
 	return this->asBtring().toStdString();
 }
-btring JsonNode::asBtring(){
+btring JsonNode::asBtring() const{
 	if (_type == JsonType::Null) {
 		return "null";
 	}
@@ -48,11 +47,12 @@ btring JsonNode::asBtring(){
 	}
 	if (_type == JsonType::Object || _type == JsonType::Array) {
 		JsonStringify ify;
-		return ify.stringify(*this);
+		const JsonNode& _node = *this;
+		return ify.stringify(_node);
 	}
 	return _bindata;
 }
-bool JsonNode::asBool(){
+bool JsonNode::asBool() const{
 	return _bindata.to<bool>();
 }
 
@@ -68,6 +68,9 @@ JsonNode& JsonNode::operator[](const btring& key){
 	JsonNode newnode;
 	newnode._key = key;
 	this->_values.push_back(newnode);
+	
+	std::cout<<"create node " <<key <<std::endl;
+
 	return this->_values[this->_values.size() - 1];
 }
 bool JsonNode::has(size_t index){
@@ -490,7 +493,7 @@ bool JsonParser::parseValue(int& pos, JsonNode& node) {
 /////////////////////
 
 
-btring JsonStringify::stringify(JsonNode& node){
+btring JsonStringify::stringify(const JsonNode& node){
 	btring str;
 
 	if (node.type() == JsonType::Null) {
@@ -512,7 +515,7 @@ btring JsonStringify::stringify(JsonNode& node){
 	return "{}";
 }
 
-void JsonStringify::strifyKV(JsonNode& node, btring& str){
+void JsonStringify::strifyKV(const JsonNode& node, btring& str){
 	str += "\"";
 	str += node._key;
 	str += "\"";
@@ -520,7 +523,7 @@ void JsonStringify::strifyKV(JsonNode& node, btring& str){
 	strifyValue(node, str);
 }
 
-void JsonStringify::strifyValue(JsonNode& node, btring& str){
+void JsonStringify::strifyValue(const JsonNode& node, btring& str){
 	//Determine what type is next
 	switch (node._type) {
 	case JsonType::Null:
@@ -559,9 +562,9 @@ void JsonStringify::strifyValue(JsonNode& node, btring& str){
 	}
 }
 
-void JsonStringify::dealArray(JsonNode& node, btring& str){
+void JsonStringify::dealArray(const JsonNode& node, btring& str){
 	str += "[";
-	for (JsonNode& n : node._values) {
+	for (const JsonNode& n : node._values) {
 		strifyValue(n, str);
 		str += ",";
 	}
@@ -571,9 +574,9 @@ void JsonStringify::dealArray(JsonNode& node, btring& str){
 		str[str.size()-1] = ']';
 }
 
-void JsonStringify::dealObject(JsonNode& node, btring& str){
+void JsonStringify::dealObject(const JsonNode& node, btring& str){
 	str += "{";
-	for (JsonNode& n : node._values) {
+	for (const JsonNode& n : node._values) {
 		strifyKV(n, str);
 		str += ",";
 	}
@@ -584,4 +587,3 @@ void JsonStringify::dealObject(JsonNode& node, btring& str){
 }
 
 _NAP_END
-#endif

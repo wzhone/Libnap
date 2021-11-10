@@ -1,5 +1,4 @@
 #include "trans.h"
-#ifdef BUILD_HASH
 _NAP_BEGIN
 
 ///////----------------hex
@@ -193,4 +192,3 @@ void Base64::deblock(uint8_t* str, uint8_t* base, const char* det){
 
 
 _NAP_END
-#endif

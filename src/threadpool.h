@@ -4,7 +4,6 @@
 #include <condition_variable>
 #include <future>
 #include <stdexcept>
-#ifdef BUILD_THREADPOOL
 _NAP_BEGIN
 
 class ThreadPool {
@@ -60,4 +59,3 @@ auto ThreadPool::push(F&& f, Args&&... args)
 
 
 _NAP_END
-#endif
