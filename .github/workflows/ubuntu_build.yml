@@ -15,7 +15,7 @@ jobs:
         cd build
         cmake ..
         make -j `nproc`
-        ./test/test
+        ./test/naptest
 
   ubuntu20_04_build:
     runs-on: ubuntu-20.04
@@ -27,4 +27,4 @@ jobs:
         cd build
         cmake ..
         make -j `nproc`
-        ./test/test
+        ./test/naptest
