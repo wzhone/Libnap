@@ -26,4 +26,4 @@ jobs:
         cd build_${{ matrix.platform }}
         cmake .. -A ${{ matrix.platform }}
         cmake --build . --config ${{ matrix.method }}
-        .\test\${{ matrix.method }}\test.exe
+        .\test\${{ matrix.method }}\naptest.exe
