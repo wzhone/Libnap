@@ -25,7 +25,7 @@ jobs:
         cmake .. -A x64
         cmake --build . --config Release
         .\test\Release\naptest.exe
-        run: echo ${{ github.sha }} > Release.txt
+        echo ${{ github.sha }} > Release.txt
         
     - name: Release
       uses: softprops/action-gh-release@v1
