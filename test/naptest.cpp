@@ -127,16 +127,16 @@ bool NapTest::test(){
 		}
 		bool ret;
 		auto start = high_resolution_clock::now();
-		//try{
+		try{
 			ret = this->_cb(dest);
-		//}catch (...){
-		//	cout << "---->CATCH  EXCEPTION<----" << endl;
-		//	cout << "When an exception occurs,you should catch the exception " << endl;
-		//	cout << "in your test function, catch it and return false to avoid" << endl;
-		//	cout << "the test prog being terminated." << endl;
-		//	cout << "---->TEST TERMINATION<----" << endl;
-		//	throw;
-		//}
+		}catch (...){
+			cout << "---->CATCH  EXCEPTION<----" << endl;
+			cout << "When an exception occurs,you should catch the exception " << endl;
+			cout << "in your test function, catch it and return false to avoid" << endl;
+			cout << "the test prog being terminated." << endl;
+			cout << "---->TEST TERMINATION<----" << endl;
+			throw;
+		}
 		auto end = high_resolution_clock::now();
 
 		case_result.caseID = i + 1;

@@ -17,11 +17,36 @@ _NAP_BEGIN
 #define SKIP_SPACE(N,J) while (J->at(N)==0x20 ||J->at(N)=='\r'||J->at(N)=='\n'||J->at(N)=='\t') N++;
 
 
-JsonNode::~JsonNode() {}
+JsonNode::~JsonNode() noexcept {
+}
 
 JsonNode::JsonNode(JsonType t) : _type(t) {
 }
 
+JsonNode::JsonNode(JsonNode&& old) noexcept{
+	this->_values_object = std::move(old._values_object);
+	this->_value = std::move(old._value);
+	this->_values_array = std::move(old._values_array);
+
+	this->_type = old._type;
+}
+
+JsonNode::JsonNode(const JsonNode& old){
+	this->_values_object = old._values_object;
+	this->_value = old._value;
+	this->_values_array = old._values_array;
+
+	this->_type = old._type;
+}
+
+JsonNode& JsonNode::operator=(const JsonNode& old) {
+	this->_values_object = old._values_object;
+	this->_value = old._value;
+	this->_values_array = old._values_array;
+
+	this->_type = old._type;
+	return *this;
+}
 
 JsonNode::operator btring() const{
 	if (_type == JsonType::Null) {
@@ -316,7 +341,7 @@ void JsonParser::throwError(size_t pos, int msg) const{
 		"Illegal character" //不合法的字符
 	};
 	errorinfo += btring(" at position: ") + btring(errormsg[msg]);
-	errorinfo += btring::from<int>(pos);
+	errorinfo += btring::from<size_t>(pos);
 	throw JsonException(errorinfo.toStdString().c_str());
 	return;
 }

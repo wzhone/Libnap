@@ -365,30 +365,30 @@ bool json(vector<string>& n){
 		JsonNode& root = json.root();
 		/////////////////////
 		JsonNode temp;
-		//if (root.type() == JsonType::Array) {
-		//	root.append(temp);
-		//	temp = root[root.size() - 1];
-		//}else {
-		//	root.append("__nouse",temp);
-		//	temp = root["__nouse"];
-		//}
-		//temp["__nouse1"] = "hello";
-		//temp["__nouse2"].setNull();
-		//temp["__nouse3"] = 13556;
-		//temp["__nouse4"] = false;
-		//temp["__nouse5"] = temp["__nouse1"];
-		//btring t2 = temp["__nouse5"].to<btring>() + temp["__nouse2"].to<btring>();
-		//t2 += btring::from<int>(temp["__nouse3"].to<int>());
-		//t2 += btring::from<bool>(temp["__nouse4"].to<bool>());
-		//NAPASSERT(t2 == "hellonull135560")
-		//btring j_temp = temp.to<btring>();
-		//btring j_res = "{\"__nouse1\":\"hello\",\"__nouse2\":null,\"__nouse3\":13556,\"__nouse4\":false,\"__nouse5\":\"hello\"}";
-		//NAPASSERT(j_temp == j_res);
-		//if (root.type() == JsonType::Array) {
-		//	root.remove(root.size()-1);
-		//} else {
-		//	root.remove("__nouse");
-		//}
+		if (root.type() == JsonType::Array) {
+			root.append(temp);
+			temp = root[root.size() - 1];
+		}else {
+			root.append("__nouse",temp);
+			temp = root["__nouse"];
+		}
+		temp["__nouse1"] = "hello";
+		temp["__nouse2"].setNull();
+		temp["__nouse3"] = 13556;
+		temp["__nouse4"] = false;
+		temp["__nouse5"] = temp["__nouse1"];
+		btring t2 = temp["__nouse5"].to<btring>() + temp["__nouse2"].to<btring>();
+		t2 += btring::from<int>(temp["__nouse3"].to<int>());
+		t2 += btring::from<bool>(temp["__nouse4"].to<bool>());
+		NAPASSERT(t2 == "hellonull135560")
+		btring j_temp = temp.to<btring>();
+		btring j_res = "{\"__nouse1\":\"hello\",\"__nouse2\":null,\"__nouse3\":13556,\"__nouse4\":false,\"__nouse5\":\"hello\"}";
+		NAPASSERT(j_temp == j_res);
+		if (root.type() == JsonType::Array) {
+			root.remove(root.size()-1);
+		} else {
+			root.remove("__nouse");
+		}
 		/////////////////////
 		JsonStringify ify;
 		btring result = ify.stringify(root);
@@ -403,18 +403,6 @@ bool json(vector<string>& n){
 
 int main(int args,char* argv[]) {
 
-	TEST_INIT(args,argv);
-
-	#ifdef BUILD_JSON
-		TEST("JSON", json);
-	#endif
-	RUN();
-
-	RESULT();
-	_getch();
-	return 0;
-
-
 	try{
 		TEST_INIT(args,argv);
 		bool r;
@@ -422,28 +410,29 @@ int main(int args,char* argv[]) {
 		r = btring_test();
 		if (!r) return 101;
 
-		#ifdef BUILD_NET
-			r = net_test();
-			if (!r) return 102;
-		#endif
+#ifdef BUILD_NET
+		r = net_test();
+		if (!r) return 102;
+#endif
 
-		#ifdef BUILD_AES
-			TEST("AES-CBC", aes_cbc);
-			TEST("AES-ECB", aes_ecb); 
-			TEST("AES-CTR", aes_ctr);
-			TEST("AES-GCM", aes_gcm);
-		#endif
+#ifdef BUILD_AES
+		TEST("AES-CBC", aes_cbc);
+		TEST("AES-ECB", aes_ecb); 
+		TEST("AES-CTR", aes_ctr);
+		TEST("AES-GCM", aes_gcm);
+#endif
 
-		#ifdef BUILD_HASH
-			TEST("BASE64", base64);
-			TEST("SHA256", sha256);
-			TEST("SHA1", sha1);
-			TEST("MD5", md5);
-		#endif
+#ifdef BUILD_HASH
+		TEST("BASE64", base64);
+		TEST("SHA256", sha256);
+		TEST("SHA1", sha1);
+		TEST("MD5", md5);
+#endif
 
+#ifdef BUILD_JSON
+		TEST("JSON", json);
+#endif
 
-
-		
 		RUN();
 
 		return RESULT();

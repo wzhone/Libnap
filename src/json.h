@@ -1,6 +1,7 @@
 #pragma once
 #include "nap_common.h"
 #include "btring.h"
+#include <type_traits>
 #include <exception>
 _NAP_BEGIN
 
@@ -32,9 +33,11 @@ enum class JsonType : int{
 //Represents a node of the json array
 class JsonNode {
 public:
-
-	~JsonNode();
 	explicit JsonNode(JsonType = JsonType::Null);
+	JsonNode(JsonNode&& old) noexcept;
+	JsonNode(const JsonNode& old);
+	JsonNode& operator=(const JsonNode&);
+	~JsonNode() noexcept;
 
 	// Getter
 	NAPJSONTRANSFUN(int)
@@ -70,15 +73,7 @@ public:
 
 	// Setter
 	void setNull();
-	template <class T> inline JsonNode& operator=(T);
-	
-
-/*
-	划分规则：
-		以冒号为分界线
-		冒号前面的归上一个类管
-		冒号后面的归本类管
-*/
+	template <class T> JsonNode& operator=(T);
 
 protected:
 	void set(btring& str, JsonType);
@@ -88,8 +83,6 @@ private:
 
 	//The type of this node
 	JsonType _type;
-
-	//bool _null= false; //Null 如果是null 则null为true
 
 	// Store object data
 	std::map<btring,JsonNode> _values_object;
@@ -105,43 +98,18 @@ private:
 };
 
 template<class T>
-inline JsonNode& JsonNode::operator=(T value) {
-	throwTypeException(JsonType::Integer);
-
-	if (typeid(T) == typeid(float) ||
-		typeid(T) == typeid(double) ||
-		typeid(T) == typeid(int) ||
-		typeid(T) == typeid(long long)
-		) {
-		_type = JsonType::Integer;
-	}else if (typeid(T) == typeid(bool)) {
+JsonNode& JsonNode::operator=(T value) {
+	if (std::is_same<T,bool>::value) {
 		_type = JsonType::Boolean;
-	}else {
+	}else if (std::is_convertible<T, int>::value) {
+		_type = JsonType::Integer;
+	} else {
 		_type = JsonType::String;
 	}
 
 	this->_value = btring::from(value);
 	return *this;
 }
-
-template<>
-inline JsonNode& JsonNode::operator=(const JsonNode& old){
-	this->_values_object = old._values_object;
-	this->_type = old._type;
-	this->_values_array = old._values_array;
-	return *this;
-}
-
-template<>
-inline JsonNode& JsonNode::operator=(JsonNode&& old){
-	//assert(false);
-	this->_values_object = std::move(old._values_object);
-	this->_type = old._type;
-	this->_values_array = std::move(old._values_array);
-	return *this;
-}
-//这里也要测试！！！！！！!!!~!!!!!
-
 
 //Convert json string to class
 class JsonParser {
