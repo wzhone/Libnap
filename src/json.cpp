@@ -22,13 +22,8 @@ JsonNode::~JsonNode() {}
 JsonNode::JsonNode(JsonType t) : _type(t) {
 }
 
-btring JsonNode::toString() {
-	JsonStringify ify;
-	btring ret = ify.stringify(*this);
-	return ret;
-}
 
-JsonNode::operator btring(){
+JsonNode::operator btring() const{
 	if (_type == JsonType::Null) {
 		return "null";
 	}
@@ -74,7 +69,7 @@ JsonNode& JsonNode::operator[](const btring& key) {
 	//Try to find key.
 	if (!this->has(key)){
 		//Create new JsonNode.
-		this->_values_object.emplace(key,JsonNode{JsonType::Null}); //!!!! 这块不熟悉，要看一下调用顺序
+		this->_values_object.emplace(key,JsonNode{JsonType::Null});
 	}
 	return this->_values_object[key];
 }
@@ -86,7 +81,7 @@ JsonNode& JsonNode::operator[](const char* key) {
 	//Try to find key.
 	if (!this->has(_key)){
 		//Create new JsonNode.
-		this->_values_object.emplace(key,JsonNode{JsonType::Null}); //!!!! 这块不熟悉，要看一下调用顺序
+		this->_values_object.emplace(key,JsonNode{JsonType::Null});
 	}
 	return this->_values_object[_key];
 }
@@ -168,10 +163,12 @@ JsonNode& JsonParser::root(){
 bool JsonParser::parse(btring str) {
 	this->json = &str;
 	
-	if (json->size() == 0) return true;
-	if (json->size() == 1) return false;
-
 	size_t p = 0;
+	SKIP_SPACE(p, json);
+
+	if (json->size()-p == 0) return true;
+	if (json->size()-p == 1) return false;
+
 	try {
 		switch (json->at(p)) {
 		case L_M:
@@ -278,7 +275,8 @@ int JsonParser::getStringLen(size_t pos) const {
 			len++;
 			pos++;
 		}else {
-			if (json->at(pos) == D_Q) return len;
+			if (json->at(pos) == D_Q) 
+				return len;
 		}
 		
 		len++;
@@ -289,18 +287,19 @@ int JsonParser::getStringLen(size_t pos) const {
 
 btring JsonParser::getString(size_t pos, int& _len) const{
 	if (_len == 0) return "";
-	size_t len = static_cast<size_t>(len);
+	size_t len = static_cast<size_t>(_len);
 	/*
 		The parameter len may be greater than the actual length of the string.
 		because it contains the length of the backslash
 	*/
 	btring ret;
-	ret.reserve(len);
+	ret.resize(len);
 
-	size_t p1 = 0, p2 = pos + 1;
-	while (p1 < len) {
+	size_t p1 = 0, p2 = pos + 1,stop = p2 + len;
+	while (p2 < stop) {
 		char c = json->at(p2++);
-		if (c == '\\') continue;
+		if (c == '\\') 
+			continue;
 		ret[p1++] = c;
 	}
 	ret.resize(p1);
@@ -391,10 +390,15 @@ bool JsonParser::parseKV(size_t& pos, JsonNode& node){
 		return false;
 	}
 	btring key(json->str() + pos + 1, len);
+
 	JsonNode& newnode = node[key];
+	if (newnode.type() != JsonType::Null) {
+		//This is not a new node, delete the remaining information.
+		newnode.setNull();
+	}
+
 	pos += len + 2; //point to next character
 
-	
 	// 2. A colon in the middle,
 	SKIP_SPACE(pos, json);
 	if (json->at(pos) != COL) {
@@ -417,12 +421,15 @@ bool JsonParser::parseValue(size_t& pos, JsonNode& node) {
 	//Determine the value type
 	switch (json->at(pos)){
 	case L_L:
+		node._type = JsonType::Object;
 		return parseObject(pos, node);
 
 	case L_M:
+		node._type = JsonType::Array;
 		return parseArray(pos, node);
 
 	case 't': {//boolean
+		node._type = JsonType::Boolean;
 		int len = checkBooleanLen(pos);
 		if (len == 4) {
 			node = true;
@@ -434,6 +441,7 @@ bool JsonParser::parseValue(size_t& pos, JsonNode& node) {
 		}
 	}
 	case 'f': { //boolean
+		node._type = JsonType::Boolean;
 		int len = checkBooleanLen(pos);
 		if (len == 5) {
 			node = false;
@@ -458,6 +466,7 @@ bool JsonParser::parseValue(size_t& pos, JsonNode& node) {
 		}
 	}
 	case D_Q: {//string
+		node._type = JsonType::String;
 		int len = getStringLen(pos);
 		if (len == -1) {
 			throwError(pos, 3);
@@ -469,6 +478,7 @@ bool JsonParser::parseValue(size_t& pos, JsonNode& node) {
 		return true;
 	}
 	default:
+		node._type = JsonType::Integer;
 		//Determine whether it is a number or an illegal type
 		if (json->at(pos) == '-' || (json->at(pos) <= '9' && json->at(pos) >= '0')) {
 			int len = checkNumberLen(pos);
@@ -491,7 +501,6 @@ bool JsonParser::parseValue(size_t& pos, JsonNode& node) {
 }
 
 /*****************************************************************************/
-
 
 btring JsonStringify::stringify(const JsonNode& node){
 	btring str;

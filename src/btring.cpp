@@ -104,7 +104,7 @@ bool btring::operator>(const btring& str) const noexcept{
 		else
 			return (this->str()[i] > str.str()[i]);
 	}
-	return false;
+	return (this->size() > str.size());
 }
 
 bool btring::operator<(const btring& str) const noexcept{
@@ -119,7 +119,7 @@ bool btring::operator>=(const btring& str) const noexcept{
 		else
 			return (this->str()[i] > str.str()[i]);
 	}
-	return true;
+	return (this->size() >= str.size());
 }
 
 bool btring::operator<=(const btring& str) const noexcept{

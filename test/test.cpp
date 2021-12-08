@@ -364,33 +364,37 @@ bool json(vector<string>& n){
 	} else {
 		JsonNode& root = json.root();
 		/////////////////////
-		// JsonNode temp;
-		// if (root.type() == JsonType::Array) {
-		// 	root.append(temp);
-		// 	temp = root[root.size() - 1];
-		// }else {
-		// 	root.append("__nouse",temp);
-		// 	temp = root["__nouse"];
-		// }
-		// temp["__nouse1"] = "hello";
-		// temp["__nouse2"].setNull();
-		// temp["__nouse3"] = 13556;
-		// temp["__nouse4"] = false;
-		// btring t2 = temp["__nouse1"].to<btring>() + temp["__nouse2"].to<btring>();
-		// t2 += btring::from<int>(temp["__nouse3"].to<int>());
-		// t2 += btring::from<bool>(temp["__nouse4"].to<bool>());
-		// NAPASSERT(t2 == "hellonull135560")
-		// btring j_temp = temp.to<btring>();
-		// btring j_res = "{\"__nouse1\":\"hello\",\"__nouse2\":null,\"__nouse3\":13556,\"__nouse4\":false}";
-		// NAPASSERT(j_temp == j_res);
-		// if (root.type() == JsonType::Array) {
-		// 	root.remove(root.size());
-		// } else {
-		// 	root.remove("__nouse");
-		// }
+		JsonNode temp;
+		//if (root.type() == JsonType::Array) {
+		//	root.append(temp);
+		//	temp = root[root.size() - 1];
+		//}else {
+		//	root.append("__nouse",temp);
+		//	temp = root["__nouse"];
+		//}
+		//temp["__nouse1"] = "hello";
+		//temp["__nouse2"].setNull();
+		//temp["__nouse3"] = 13556;
+		//temp["__nouse4"] = false;
+		//temp["__nouse5"] = temp["__nouse1"];
+		//btring t2 = temp["__nouse5"].to<btring>() + temp["__nouse2"].to<btring>();
+		//t2 += btring::from<int>(temp["__nouse3"].to<int>());
+		//t2 += btring::from<bool>(temp["__nouse4"].to<bool>());
+		//NAPASSERT(t2 == "hellonull135560")
+		//btring j_temp = temp.to<btring>();
+		//btring j_res = "{\"__nouse1\":\"hello\",\"__nouse2\":null,\"__nouse3\":13556,\"__nouse4\":false,\"__nouse5\":\"hello\"}";
+		//NAPASSERT(j_temp == j_res);
+		//if (root.type() == JsonType::Array) {
+		//	root.remove(root.size()-1);
+		//} else {
+		//	root.remove("__nouse");
+		//}
 		/////////////////////
 		JsonStringify ify;
 		btring result = ify.stringify(root);
+		if (!(result == n[1])) {
+			cout << result << " ------- " << n[1]<<endl;
+		}
 		return (result == n[1]);
 	}
 }
@@ -406,7 +410,9 @@ int main(int args,char* argv[]) {
 	#endif
 	RUN();
 
-	return RESULT();
+	RESULT();
+	_getch();
+	return 0;
 
 
 	try{

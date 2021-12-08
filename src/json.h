@@ -47,9 +47,9 @@ public:
 	NAPJSONTRANSFUN(uint64_t);
 	NAPJSONTRANSFUN(int16_t);
 	NAPJSONTRANSFUN(int64_t);
-	operator btring();
+	operator btring() const;
 	template<typename T> T to() const{ return this->_value.to<T>(); }
-	btring toString();//JsonNode to json string
+	template<> btring to() const { return *this; }
 	
 	// Object
 	JsonNode& operator[](const btring& key);
@@ -134,6 +134,7 @@ inline JsonNode& JsonNode::operator=(const JsonNode& old){
 
 template<>
 inline JsonNode& JsonNode::operator=(JsonNode&& old){
+	//assert(false);
 	this->_values_object = std::move(old._values_object);
 	this->_type = old._type;
 	this->_values_array = std::move(old._values_array);
