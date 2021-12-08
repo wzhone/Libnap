@@ -13,18 +13,18 @@ env:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-2019
     steps:
     - uses: actions/checkout@v2
     - uses: microsoft/setup-msbuild@v1
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        mkdir -p build_${{ matrix.platform }}
-        cd build_${{ matrix.platform }}
-        cmake .. -A ${{ matrix.platform }}
-        cmake --build . --config ${{ matrix.method }}
-        .\test\${{ matrix.method }}\naptest.exe
+        mkdir -p build_x64
+        cd build_x64
+        cmake .. -A x64
+        cmake --build . --config Release
+        .\test\Release\naptest.exe
         run: echo ${{ github.sha }} > Release.txt
         
     - name: Release
