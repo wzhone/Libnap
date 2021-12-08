@@ -19,7 +19,7 @@ The value must be one of the following data types:
 	null
 */
 
-#define NAPJSONTRANSFUN(T) operator T(){return this->to<T>();}
+#define NAPJSONTRANSFUN(T) operator T() const{return this->to<T>();}
 
 enum class JsonType : int{
 	Null = 0,
@@ -51,9 +51,16 @@ public:
 	NAPJSONTRANSFUN(int16_t);
 	NAPJSONTRANSFUN(int64_t);
 	operator btring() const;
-	template<typename T> T to() const{ return this->_value.to<T>(); }
-	template<> btring to() const { return *this; }
-	
+
+	template<typename T>
+	T to() const {
+		if constexpr( std::is_same<T,btring>::value ){
+			return static_cast<btring>(*this);
+		}else{
+			return this->_value.to<T>();
+		}
+	}
+
 	// Object
 	JsonNode& operator[](const btring& key);
 	JsonNode& operator[](const char* key);

@@ -16,7 +16,6 @@ _NAP_BEGIN
 
 #define SKIP_SPACE(N,J) while (J->at(N)==0x20 ||J->at(N)=='\r'||J->at(N)=='\n'||J->at(N)=='\t') N++;
 
-
 JsonNode::~JsonNode() noexcept {
 }
 
