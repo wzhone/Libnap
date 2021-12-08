@@ -1,6 +1,8 @@
-name: CMake
+name: windows_package
 
 on:
+  workflow_dispatch:
+  
   create:
     tags:
       - v*
