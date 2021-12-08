@@ -55,7 +55,8 @@ public:
 	template<typename T>
 	T to() const {
 		if constexpr( std::is_same<T,btring>::value ){
-			return static_cast<btring>(*this);
+			btring tmp = *this;
+			return tmp;
 		}else{
 			return this->_value.to<T>();
 		}
