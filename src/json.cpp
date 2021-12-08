@@ -3,43 +3,37 @@
 #include <typeinfo>
 _NAP_BEGIN
 
-#define L_S		'('
-#define R_S		')'
-#define L_M		'['
-#define R_M		']'
-#define L_L		'{' 
-#define R_L		'}'
-#define S_Q		'\''
-#define D_Q		'\"'
-#define COL		':'
-#define COMMA	','
+#define L_S   '('
+#define R_S   ')'
+#define L_M   '['
+#define R_M   ']'
+#define L_L   '{' 
+#define R_L   '}'
+#define S_Q   '\''
+#define D_Q   '\"'
+#define COL   ':'
+#define COMMA ','
 
-#define SKIP_SPACE(N,ARR) while (ARR[N]==' '||ARR[N]=='\r'||ARR[N]=='\n'||ARR[N]=='\t') N++;
+#define SKIP_SPACE(N,J) while (J->at(N)==0x20 ||J->at(N)=='\r'||J->at(N)=='\n'||J->at(N)=='\t') N++;
 
 
-JsonNode::~JsonNode() {
+JsonNode::~JsonNode() {}
+
+JsonNode::JsonNode(JsonType t) : _type(t) {
 }
 
-JsonNode::JsonNode(JsonType t) : _type(t) {}
+btring JsonNode::toString() {
+	JsonStringify ify;
+	btring ret = ify.stringify(*this);
+	return ret;
+}
 
-int JsonNode::asInt() const{
-	return _bindata.to<int>();
-}
-long long JsonNode::asLong() const{
-	return _bindata.to<long long>();
-}
-double JsonNode::asFloat() const{
-	return _bindata.to<double>();
-}
-std::string JsonNode::asString() const{
-	return this->asBtring().toStdString();
-}
-btring JsonNode::asBtring() const{
+JsonNode::operator btring(){
 	if (_type == JsonType::Null) {
 		return "null";
 	}
 	if (_type == JsonType::Boolean) {
-		if (this->asBool()) {
+		if (this->to<bool>()) {
 			return "true";
 		}else {
 			return "false";
@@ -50,114 +44,111 @@ btring JsonNode::asBtring() const{
 		const JsonNode& _node = *this;
 		return ify.stringify(_node);
 	}
-	return _bindata;
-}
-bool JsonNode::asBool() const{
-	return _bindata.to<bool>();
+	return _value;
 }
 
-JsonNode& JsonNode::operator[](const btring& key){
-	throwTypeException(JsonType::Object);
-	//match key
-	for (size_t i = 0; i < this->_values.size();i++) {
-		if (this->_values[i]._key == key) {
-			return this->_values[i];
-		}
-	}
-	//create node
-	JsonNode newnode;
-	newnode._key = key;
-	this->_values.push_back(newnode);
-	
-	std::cout<<"create node " <<key <<std::endl;
-
-	return this->_values[this->_values.size() - 1];
-}
 bool JsonNode::has(size_t index){
 	throwTypeException(JsonType::Array);
 	return (index < size());
 }
+
 bool JsonNode::has(const btring& key){
 	throwTypeException(JsonType::Object);
-	for (size_t i = 0; i < this->_values.size(); i++) {
-		if (this->_values[i]._key == key)return true;
-	}
-	return false;
+	return (this->_values_object.count(key)==1);
 }
 
+size_t JsonNode::size() const{
+	switch (this->_type)
+	{
+	case JsonType::Array: return this->_values_array.size();
+	case JsonType::Object: return this->_values_object.size();
+	default:
+		throw JsonException("Illegal operation, size() error.");
+		break;
+	}
+}
+
+JsonNode& JsonNode::operator[](const btring& key) {
+	throwTypeException(JsonType::Object);
+
+	//Try to find key.
+	if (!this->has(key)){
+		//Create new JsonNode.
+		this->_values_object.emplace(key,JsonNode{JsonType::Null}); //!!!! 这块不熟悉，要看一下调用顺序
+	}
+	return this->_values_object[key];
+}
+
+JsonNode& JsonNode::operator[](const char* key) {
+	throwTypeException(JsonType::Object);
+	btring _key = key;
+
+	//Try to find key.
+	if (!this->has(_key)){
+		//Create new JsonNode.
+		this->_values_object.emplace(key,JsonNode{JsonType::Null}); //!!!! 这块不熟悉，要看一下调用顺序
+	}
+	return this->_values_object[_key];
+}
 
 JsonNode& JsonNode::operator[](size_t index) {
 	throwTypeException(JsonType::Array);
-	if (index >= this->_values.size()) {
-		auto size = this->_values.size();
-		JsonNode newnode;
+
+	size_t size = this->size();
+	if (index >= size) {
 		for (size_t i = 0ll; i < index - size + 1ull; i++) {
-			this->_values.push_back(newnode);
+			this->_values_array.emplace_back(JsonNode{JsonType::Null});
 		};
 	}
-	return this->_values[index];
+	return this->_values_array[index];
 }
 
 void JsonNode::setNull(){
 	this->_type = JsonType::Null;
-	this->_values.clear();
-	this->_bindata.clear();
-	//this->_key.clear();  The key belongs to the value of the upper class 
+	this->_values_array.clear();
+	this->_values_object.clear();
+	this->_value.clear();
 }
 
-void JsonNode::objectAppend(btring key, JsonNode node){
+void JsonNode::append(btring key, JsonNode node){
 	throwTypeException(JsonType::Object);
-	node._key = key;
-	this->_values.push_back(std::move(node));
+	(*this)[key] = node;
 }
 
-void JsonNode::objectAppend(JsonNode node) {
-	throwTypeException(JsonType::Object);
-	this->_values.push_back(std::move(node));
-}
-
-void JsonNode::arrayAppend(JsonNode node){
+void JsonNode::append(JsonNode node){
 	throwTypeException(JsonType::Array);
-	this->_values.push_back(std::move(node));
+	this->_values_array.emplace_back(node);
 }
 
 bool JsonNode::remove(btring key){
 	throwTypeException(JsonType::Object);
-	for (auto p = this->_values.begin(); p != this->_values.end(); p++) {
-		if (p->_key == key) {
-			this->_values.erase(p);
-			return true;
-		}
-	}
-	return false;
+	return (this->_values_object.erase(key) == 1);
 }
 
 bool JsonNode::remove(size_t index){
 	throwTypeException(JsonType::Array);
-	index--;
-	if (index >= this->_values.size()) return false;
-	size_t n = 0;
-	for (auto p = this->_values.begin(); p != this->_values.end(); p++) {
-		if (n == index) {
-			this->_values.erase(p);
-			return true;
-		}
-		n++;
-	}
-	return false;
+	if (index < 0 || index>= this->_values_array.size()) 
+		return false;
+	
+	auto it = this->_values_array.begin();
+	it += index;
+	this->_values_array.erase(it);
+	return true;
 }
-
 
 void JsonNode::set(btring& str, JsonType t){
-	this->_bindata = str;
+	this->_value = str;
 	this->_type = t;
 }
-
 
 void JsonNode::throwTypeException(JsonType type){
 	if (this->_type == type) {
 		return;
 	}
+
+	/*
+		For null type, It can be any type.
+	*/
 	if (this->_type == JsonType::Null) {
 		this->_type = type;
 		return;
@@ -165,26 +156,24 @@ void JsonNode::throwTypeException(JsonType type){
 	if ((int)this->_type < 255 && (int)type < 255) {
 		return;
 	}
-	throw JsonException("Illegal operation, Type error");
+	throw JsonException("Illegal operation, mismatched type operation.");
 }
 
-
-////////////////////
-
+/*****************************************************************************/
 
 JsonNode& JsonParser::root(){
 	return _root;
 }
 
 bool JsonParser::parse(btring str) {
-	json = str;
+	this->json = &str;
 	
-	if (json.size() == 0) return true;
-	if (json.size() == 1) return false;
+	if (json->size() == 0) return true;
+	if (json->size() == 1) return false;
 
-	int p = 0;
+	size_t p = 0;
 	try {
-		switch (json.at(p)) {
+		switch (json->at(p)) {
 		case L_M:
 			_root._type = JsonType::Array;
 			return parseArray(p, _root);
@@ -194,13 +183,13 @@ bool JsonParser::parse(btring str) {
 			return parseObject(p, _root);
 			break;
 		default:
-			setError(p);
+			throwError(p);
 			return false;
 		}
 	}
 	catch (btringException& e) {
 		(void)(e);
-		this->setError(p, 2);
+		this->throwError(p, 2);
 		return false;
 	}
 	catch (...) {
@@ -209,13 +198,13 @@ bool JsonParser::parse(btring str) {
 	}
 }
 
-bool JsonParser::parseObject(int& pos, JsonNode&node){
+bool JsonParser::parseObject(size_t& pos, JsonNode&node){
 	//The character after'{' is a string or'}'
-	assert(json.at(pos) == L_L);
+	assert(json->at(pos) == L_L);
 	pos++;
 	SKIP_SPACE(pos, json);
 
-	switch (json.at(pos)) {
+	switch (json->at(pos)) {
 	case R_L:
 		//Absorb the ending character because the character belongs to this object
 		pos++; 
@@ -224,33 +213,33 @@ bool JsonParser::parseObject(int& pos, JsonNode&node){
 		while(1){
 			if (!parseKV(pos, node)) return false;
 			SKIP_SPACE(pos, json);
-			if (json.at(pos) == COMMA) {
+			if (json->at(pos) == COMMA) {
 				pos++;
 				continue;
-			}else if(json.at(pos) == R_L){
+			}else if(json->at(pos) == R_L){
 				pos++; //Remove closing parenthesis
 				return true;
 			}else {
-				setError(pos);
+				throwError(pos);
 				return false;
 			}
 		}
 		break;
 	default:
-		setError(pos);
+		throwError(pos);
 		return false;
 	}
 	assert(false);
 	return false;
 }
 
-bool JsonParser::parseArray(int& pos, JsonNode& node){
+bool JsonParser::parseArray(size_t& pos, JsonNode& node){
 	//'[' is expected to be string, number, null, boolean, left brace, left square bracket, right square bracket.
-	assert(json.at(pos) == L_M);
+	assert(json->at(pos) == L_M);
 	pos++;
 	SKIP_SPACE(pos, json);
 
-	switch (json.at(pos)) {
+	switch (json->at(pos)) {
 	case R_M:
 		//Absorb the ending character because the character belongs to this object
 		pos++;
@@ -260,17 +249,17 @@ bool JsonParser::parseArray(int& pos, JsonNode& node){
 		while (1) {
 			JsonNode _node;
 			if (!parseValue(pos, _node)) return false;
-			node.arrayAppend(_node);
+			node.append(_node);
 
 			SKIP_SPACE(pos, json);
-			if (json.at(pos) == COMMA) {
+			if (json->at(pos) == COMMA) {
 				pos++;
 				continue;
-			}else if (json.at(pos) == R_M) {
+			}else if (json->at(pos) == R_M) {
 				pos++; //Remove closing parenthesis
 				return true;
 			}else {
-				setError(pos);
+				throwError(pos);
 				return false;
 			}
 		}
@@ -279,17 +268,17 @@ bool JsonParser::parseArray(int& pos, JsonNode& node){
 	return false;
 }
 
-int JsonParser::getStringLen(int pos) {
-	assert(json.at(pos) == D_Q);
+int JsonParser::getStringLen(size_t pos) const {
+	assert(json->at(pos) == D_Q);
 	pos++;
 
 	int len = 0;
-	while (pos < (int)json.size()) {
-		if (json.at(pos) == '\\') {
+	while (pos < json->size()) {
+		if (json->at(pos) == '\\') {
 			len++;
 			pos++;
 		}else {
-			if (json.at(pos) == D_Q) return len;
+			if (json->at(pos) == D_Q) return len;
 		}
 		
 		len++;
@@ -298,124 +287,135 @@ int JsonParser::getStringLen(int pos) {
 	return -1;
 }
 
-btring JsonParser::getString(int pos,int& len){
-	btring value(json.str() + pos + 1, len);
+btring JsonParser::getString(size_t pos, int& _len) const{
+	if (_len == 0) return "";
+	size_t len = static_cast<size_t>(len);
+	/*
+		The parameter len may be greater than the actual length of the string.
+		because it contains the length of the backslash
+	*/
 	btring ret;
-	if (len == 0) return "";
-	ret.reserve(value.size());
-	int p1 = 0, p2 = 0;
+	ret.reserve(len);
+
+	size_t p1 = 0, p2 = pos + 1;
 	while (p1 < len) {
-		char c = value[p1];
-		if (c == '\\') {
-			p1++;
-			continue;
-		}
-		ret[p2] = value[p1];
-		p1++;
-		p2++;
+		char c = json->at(p2++);
+		if (c == '\\') continue;
+		ret[p1++] = c;
 	}
-	ret.resize(p2);
+	ret.resize(p1);
 	return ret;
 }
 
-void JsonParser::setError(int pos, int msg){
+void JsonParser::throwError(size_t pos, int msg) const{
 	btring errorinfo = "JsonException - ";
 	const char* errormsg[] = {
-		"Unexpected character at position ", //出现意外的字符
+		"Unexpected character", //出现意外的字符
 		"Parse exception: Unknown Exception",//未知原因的解析异常
-		"Parse exception: ",	//解析异常
-		"Unclosed string at pos: ", //未闭合的字符串
-		"Illegal character at position " //不合法的字符
+		"Parse exception",	//解析异常
+		"Unclosed string", //未闭合的字符串
+		"Illegal character" //不合法的字符
 	};
-	errorinfo += errormsg[msg];
+	errorinfo += btring(" at position: ") + btring(errormsg[msg]);
 	errorinfo += btring::from<int>(pos);
 	throw JsonException(errorinfo.toStdString().c_str());
 	return;
 }
 
-int JsonParser::getBooleanLen(int pos) {
-	if (json.at(pos) == 't') {
-		if (json.at(pos+1ll) == 'r' &&
-			json.at(pos+2ll) == 'u' &&
-			json.at(pos+3ll) == 'e')
+int JsonParser::checkBooleanLen(size_t pos) const{
+	/*
+		Json grammar only allows lowercase boolean values,
+		which can only be true or false 
+	*/
+	if (json->at(pos) == 't') {
+		if (json->at(pos+1ll) == 'r' &&
+			json->at(pos+2ll) == 'u' &&
+			json->at(pos+3ll) == 'e')
 			return 4;
 	}
-	if (json.at(pos) == 'f') {
-		if (json.at(pos+1ll) == 'a' &&
-			json.at(pos+2ll) == 'l' &&
-			json.at(pos+3ll) == 's' &&
-			json.at(pos+4ll) == 'e')
+	if (json->at(pos) == 'f') {
+		if (json->at(pos+1ll) == 'a' &&
+			json->at(pos+2ll) == 'l' &&
+			json->at(pos+3ll) == 's' &&
+			json->at(pos+4ll) == 'e')
 			return 5;
 	}
 	return -1;
 }
 
-//A return value of 0 means an error
-int JsonParser::getNumberLen(int pos) {
+int JsonParser::checkNumberLen(size_t pos) const{
 	int len = 0;
-	while (pos < (int)json.size()) {
-		char c = json.at(pos);
+	while (pos < json->size()) {
+		char c = json->at(pos);
+
+		//Only the first digit of the number can be a minus sign
 		if (len == 0 || c == '-') {
 			len++;
 			pos++;
 			continue;
-			//Only the first digit of the number can be a minus sign
 		}
 		if ((c <= '9' && c >= '0') || c == '.') {
 			len++;
 			pos++;
 			continue;
+		}else{
+			break;
+			len = -1;
 		}
-		break;
 	}
 	return len;
 }
 
-int JsonParser::getNullLen(int pos) {
-	if (json.at(pos) == 'n') {
-		if (json.at(pos + 1) == 'u' &&
-			json.at(pos + 2) == 'l' &&
-			json.at(pos + 3) == 'l')
+int JsonParser::checkNullLen(size_t pos) const{
+	if (json->at(pos) == 'n') {
+		if (json->at(pos + 1) == 'u' &&
+			json->at(pos + 2) == 'l' &&
+			json->at(pos + 3) == 'l')
 			return 4;
 	}
 	return -1;
 }
 
-bool JsonParser::parseKV(int& pos, JsonNode& node){
-	//Key-Value requires 
-	//  a string at the beginning, a colon in the middle, and a legal type at the end
+bool JsonParser::parseKV(size_t& pos, JsonNode& node){
+
+	// 1. A string at the beginning
 	SKIP_SPACE(pos, json);
-	if (json.at(pos) != D_Q) {
-		setError(pos, 3);
+	if (json->at(pos) != D_Q) {
+		throwError(pos, 3);
 		return false;
 	}
 	
 	int len = getStringLen(pos);
 	if (len == -1) {
-		setError(pos, 3);
+		throwError(pos, 3);
 		return false;
 	}
-	btring key(json.str() + pos + 1, len);
+	btring key(json->str() + pos + 1, len);
 	JsonNode& newnode = node[key];
 	pos += len + 2; //point to next character
 
+	
+	// 2. A colon in the middle,
 	SKIP_SPACE(pos, json);
-	if (json.at(pos) != COL) {
-		setError(pos);
+	if (json->at(pos) != COL) {
+		throwError(pos);
 		return false;
 	}else {
-		pos++; //消化冒号
+		pos++; //skip the colon
 	}
+
+	// 3. A legal type at the end
 	return parseValue(pos, newnode);
 }
 
-bool JsonParser::parseValue(int& pos, JsonNode& node) {
+bool JsonParser::parseValue(size_t& pos, JsonNode& node) {
 	//Expected after the colon is string, number, null, boolean, left brace, left square bracket
 	//The colon is not part of the value part and should be removed by the caller
+
 	SKIP_SPACE(pos, json);
 
 	//Determine the value type
-	switch (json.at(pos)){
+	switch (json->at(pos)){
 	case L_L:
 		return parseObject(pos, node);
 
@@ -423,32 +423,32 @@ bool JsonParser::parseValue(int& pos, JsonNode& node) {
 		return parseArray(pos, node);
 
 	case 't': {//boolean
-		int len = getBooleanLen(pos);
+		int len = checkBooleanLen(pos);
 		if (len == 4) {
 			node = true;
 			pos += len;
 			return true;
 		}else {
-			setError(pos, 4);
+			throwError(pos, 4);
 			return false;
 		}
 	}
 	case 'f': { //boolean
-		int len = getBooleanLen(pos);
+		int len = checkBooleanLen(pos);
 		if (len == 5) {
 			node = false;
 			pos += len;
 			return true;
 		}
 		else {
-			setError(pos, 4);
+			throwError(pos, 4);
 			return false;
 		}
 	}
 	case 'n': { // null
-		int len = getNullLen(pos);
+		int len = checkNullLen(pos);
 		if (len == -1) {
-			setError(pos, 4);
+			throwError(pos, 4);
 			return false;
 		}
 		else {
@@ -460,7 +460,7 @@ bool JsonParser::parseValue(int& pos, JsonNode& node) {
 	case D_Q: {//string
 		int len = getStringLen(pos);
 		if (len == -1) {
-			setError(pos, 3);
+			throwError(pos, 3);
 			return false;
 		}
 		btring temp = getString(pos, len);
@@ -470,18 +470,18 @@ bool JsonParser::parseValue(int& pos, JsonNode& node) {
 	}
 	default:
 		//Determine whether it is a number or an illegal type
-		if (json.at(pos) == '-' || (json.at(pos) <= '9' && json.at(pos) >= '0')) {
-			int len = getNumberLen(pos);
-			if (len == 0) {
-				setError(pos, 3);
+		if (json->at(pos) == '-' || (json->at(pos) <= '9' && json->at(pos) >= '0')) {
+			int len = checkNumberLen(pos);
+			if (len == -1) {
+				throwError(pos, 3);
 				return false;
 			}
-			btring value(json.str() + pos, len);
+			btring value(json->str() + pos, len);
 			node.set(value, JsonType::Integer);
 			pos += len;
 			return true;
 		}else {
-			setError(pos, 4);
+			throwError(pos, 4);
 			return false;
 		}
 		break;
@@ -490,7 +490,7 @@ bool JsonParser::parseValue(int& pos, JsonNode& node) {
 	return false;
 }
 
-/////////////////////
+/*****************************************************************************/
 
 
 btring JsonStringify::stringify(const JsonNode& node){
@@ -515,9 +515,33 @@ btring JsonStringify::stringify(const JsonNode& node){
 	return "{}";
 }
 
-void JsonStringify::strifyKV(const JsonNode& node, btring& str){
+void JsonStringify::dealArray(const JsonNode& node, btring& str){
+	str += "[";
+	for (const JsonNode& n : node._values_array) {
+		strifyValue(n, str);
+		str += ",";
+	}
+	if (node.size()==0)
+		str += "]";
+	else
+		str[str.size()-1] = ']';
+}
+
+void JsonStringify::dealObject(const JsonNode& node, btring& str){
+	str += "{";
+	for (const auto& [k,v] : node._values_object) {
+		strifyKV(k ,v, str);
+		str += ",";
+	}
+	if (node.size()==0)
+		str += "}";
+	else
+		str[str.size()-1] = '}';
+}
+
+void JsonStringify::strifyKV(const btring& k,const JsonNode& node, btring& str){
 	str += "\"";
-	str += node._key;
+	str += k;
 	str += "\"";
 	str += ":";
 	strifyValue(node, str);
@@ -536,12 +560,12 @@ void JsonStringify::strifyValue(const JsonNode& node, btring& str){
 		dealObject(node, str);
 		return;
 	case JsonType::Integer:
-		str += node._bindata;
+		str += node._value;
 		return;
 	case JsonType::String: 
 		{
 			str += "\"";
-			for (char c : node._bindata) {
+			for (char c : node._value) {
 				if (c == '\"') {
 					str += "\\\"";
 				}else {
@@ -552,7 +576,7 @@ void JsonStringify::strifyValue(const JsonNode& node, btring& str){
 			return;
 		}
 	case JsonType::Boolean:
-		if (node._bindata.to<bool>()) {
+		if (node.to<bool>()) {
 			str += "true";
 		}
 		else {
@@ -560,30 +584,6 @@ void JsonStringify::strifyValue(const JsonNode& node, btring& str){
 		}
 		return;
 	}
-}
-
-void JsonStringify::dealArray(const JsonNode& node, btring& str){
-	str += "[";
-	for (const JsonNode& n : node._values) {
-		strifyValue(n, str);
-		str += ",";
-	}
-	if (node.size()==0)
-		str += "]";
-	else
-		str[str.size()-1] = ']';
-}
-
-void JsonStringify::dealObject(const JsonNode& node, btring& str){
-	str += "{";
-	for (const JsonNode& n : node._values) {
-		strifyKV(n, str);
-		str += ",";
-	}
-	if (node.size()==0)
-		str += "}";
-	else
-		str[str.size()-1] = '}';
 }
 
 _NAP_END

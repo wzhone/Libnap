@@ -127,6 +127,11 @@ public:
 	btring& operator=(const std::string& str) noexcept;
 	btring& operator=(const char* str) noexcept;
 
+	bool operator>(const btring& str) const noexcept;
+	bool operator<(const btring& str) const noexcept;
+	bool operator>=(const btring& str) const noexcept;
+	bool operator<=(const btring& str) const noexcept;
+
 
 	friend std::ostream& operator<<(std::ostream& out, const btring& b);
 	friend std::istream& operator>>(std::istream& is, btring& b);
@@ -147,11 +152,11 @@ public:
 	//获取指定位置字符，越界抛出异常
 	uint8_t at(size_t pos)const;
 
-	//获取指定位置字符，不进行越界检查
+	//获取指定位置字符，越界会回溯
 	uint8_t& operator[](size_t pos)const noexcept;
 
-	//获取指定位置字符，越界会回溯
-	uint8_t& operator()(size_t pos)const noexcept;
+	//获取哈希值
+	size_t operator()()const noexcept;
 
 	std::string toStdString()const;//返回一个标准c++ string
 	inline uint8_t* str() const{return content;};//获取不带0结尾的字符串

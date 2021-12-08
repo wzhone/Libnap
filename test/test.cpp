@@ -356,6 +356,7 @@ bool aes_gcm(vector<string>& n) {
 #ifdef BUILD_JSON
 
 bool json(vector<string>& n){
+
 	JsonParser json;
 	bool res = json.parse(n[0]);
 	if (!res) {
@@ -363,30 +364,30 @@ bool json(vector<string>& n){
 	} else {
 		JsonNode& root = json.root();
 		/////////////////////
-		JsonNode temp;
-		if (root.type() == JsonType::Array) {
-			root.arrayAppend(temp);
-			temp = root[root.size() - 1];
-		}else {
-			root.objectAppend("__nouse",temp);
-			temp = root["__nouse"];
-		}
-		temp["__nouse1"] = "hello";
-		temp["__nouse2"].setNull();
-		temp["__nouse3"] = 13556;
-		temp["__nouse4"] = false;
-		btring t2 = temp["__nouse1"].asBtring() + temp["__nouse2"].asBtring();
-		t2 += btring::from<int>(temp["__nouse3"].asInt());
-		t2 += btring::from<bool>(temp["__nouse4"].asBool());
-		NAPASSERT(t2 == "hellonull135560")
-		btring j_temp = temp.asBtring();
-		btring j_res = "{\"__nouse1\":\"hello\",\"__nouse2\":null,\"__nouse3\":13556,\"__nouse4\":false}";
-		NAPASSERT(j_temp == j_res);
-		if (root.type() == JsonType::Array) {
-			root.remove(root.size());
-		} else {
-			root.remove("__nouse");
-		}
+		// JsonNode temp;
+		// if (root.type() == JsonType::Array) {
+		// 	root.append(temp);
+		// 	temp = root[root.size() - 1];
+		// }else {
+		// 	root.append("__nouse",temp);
+		// 	temp = root["__nouse"];
+		// }
+		// temp["__nouse1"] = "hello";
+		// temp["__nouse2"].setNull();
+		// temp["__nouse3"] = 13556;
+		// temp["__nouse4"] = false;
+		// btring t2 = temp["__nouse1"].to<btring>() + temp["__nouse2"].to<btring>();
+		// t2 += btring::from<int>(temp["__nouse3"].to<int>());
+		// t2 += btring::from<bool>(temp["__nouse4"].to<bool>());
+		// NAPASSERT(t2 == "hellonull135560")
+		// btring j_temp = temp.to<btring>();
+		// btring j_res = "{\"__nouse1\":\"hello\",\"__nouse2\":null,\"__nouse3\":13556,\"__nouse4\":false}";
+		// NAPASSERT(j_temp == j_res);
+		// if (root.type() == JsonType::Array) {
+		// 	root.remove(root.size());
+		// } else {
+		// 	root.remove("__nouse");
+		// }
 		/////////////////////
 		JsonStringify ify;
 		btring result = ify.stringify(root);
@@ -398,10 +399,15 @@ bool json(vector<string>& n){
 
 int main(int args,char* argv[]) {
 
+	TEST_INIT(args,argv);
 
+	#ifdef BUILD_JSON
+		TEST("JSON", json);
+	#endif
+	RUN();
 
+	return RESULT();
 
-	return 0;
 
 	try{
 		TEST_INIT(args,argv);
@@ -430,9 +436,7 @@ int main(int args,char* argv[]) {
 		#endif
 
 
-		#ifdef BUILD_JSON
-			TEST("JSON", json);
-		#endif
+
 		
 		RUN();
 

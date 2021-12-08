@@ -18,6 +18,7 @@ The value must be one of the following data types:
 	null
 */
 
+#define NAPJSONTRANSFUN(T) operator T(){return this->to<T>();}
 
 enum class JsonType : int{
 	Null = 0,
@@ -28,64 +29,83 @@ enum class JsonType : int{
 	Array  = 257
 };
 
-
 //Represents a node of the json array
 class JsonNode {
 public:
 
-	explicit JsonNode(JsonType = JsonType::Null);
-	
 	~JsonNode();
-	inline JsonType type() const;
+	explicit JsonNode(JsonType = JsonType::Null);
 
-	 //Getter
-	int asInt() const;
-	long long asLong() const;
-	double asFloat() const;
-	std::string asString() const;
-	btring asBtring() const;
-	bool asBool() const;
-	JsonNode& operator[](size_t index);
+	// Getter
+	NAPJSONTRANSFUN(int)
+	NAPJSONTRANSFUN(double)
+	NAPJSONTRANSFUN(float)
+	NAPJSONTRANSFUN(bool)
+	NAPJSONTRANSFUN(std::string)
+	NAPJSONTRANSFUN(uint16_t);
+	NAPJSONTRANSFUN(uint32_t);
+	NAPJSONTRANSFUN(uint64_t);
+	NAPJSONTRANSFUN(int16_t);
+	NAPJSONTRANSFUN(int64_t);
+	operator btring();
+	template<typename T> T to() const{ return this->_value.to<T>(); }
+	btring toString();//JsonNode to json string
+	
+	// Object
 	JsonNode& operator[](const btring& key);
-	size_t size() const { return this->_values.size(); }
-	bool has(size_t index);
+	JsonNode& operator[](const char* key);
+	void append(btring key, JsonNode);
+	bool remove(btring key);
 	bool has(const btring& key);
 
-	//Setter
-	void setNull();
-	void objectAppend(btring key, JsonNode);
-	void objectAppend(JsonNode);
-	void arrayAppend(JsonNode);
-	bool remove(btring key);
-	bool remove(size_t index);
+	// Array
+	JsonNode& operator[](size_t index); // Start from 0.
+	void append(JsonNode);
+	bool remove(size_t index); // Start from 0.
+	bool has(size_t index); // Start from 0.
 
-	template <class T> inline JsonNode& operator=(const T&);
+	// Common
+	size_t size() const; // Return a number representing the length.
+	inline JsonType type() const{return _type;} // Return the type of this node.
+
+	// Setter
+	void setNull();
+	template <class T> inline JsonNode& operator=(T);
 	
 
+/*
+	划分规则：
+		以冒号为分界线
+		冒号前面的归上一个类管
+		冒号后面的归本类管
+*/
 
 protected:
-
-	//Basic type assignment
 	void set(btring& str, JsonType);
 
 	void throwTypeException(JsonType);
-
 private:
 
+	//The type of this node
 	JsonType _type;
-	btring _key; // Object key
-	btring _bindata; //Integer & UInteger & String & Boolean
 
 	//bool _null= false; //Null 如果是null 则null为true
 
-	std::vector<JsonNode> _values; //Array & Object
+	// Store object data
+	std::map<btring,JsonNode> _values_object;
 	
+	// Store array data
+	std::vector<JsonNode> _values_array;
+
+	// Store other data (Integer UInteger String Boolean)
+	btring _value;
+
 	friend class JsonParser;
 	friend class JsonStringify;
 };
 
 template<class T>
-inline JsonNode& JsonNode::operator=(const T& value) {
+inline JsonNode& JsonNode::operator=(T value) {
 	throwTypeException(JsonType::Integer);
 
 	if (typeid(T) == typeid(float) ||
@@ -100,66 +120,57 @@ inline JsonNode& JsonNode::operator=(const T& value) {
 		_type = JsonType::String;
 	}
 
-	_bindata = btring::from(value);
+	this->_value = btring::from(value);
 	return *this;
 }
 
 template<>
 inline JsonNode& JsonNode::operator=(const JsonNode& old){
-	//Keep your own 'this->_key' 
-	//this->_key = old._key;
-	// if (this->_key == "")
-	// 	this->_key = old._key;
-	// std::cout<< "--" << this->_key<<"--"<< std::endl;
-	// std::cout<< "--" << old._key <<"--"<< std::endl;
-
-	std::cout<< "--==" << old._key <<"--"<< std::endl;
-
-	this->_bindata = old._bindata;
+	this->_values_object = old._values_object;
 	this->_type = old._type;
-	this->_values = old._values;
+	this->_values_array = old._values_array;
 	return *this;
 }
 
-
-inline JsonType JsonNode::type() const{
-	return this->_type;
+template<>
+inline JsonNode& JsonNode::operator=(JsonNode&& old){
+	this->_values_object = std::move(old._values_object);
+	this->_type = old._type;
+	this->_values_array = std::move(old._values_array);
+	return *this;
 }
-
-
+//这里也要测试！！！！！！!!!~!!!!!
 
 
 //Convert json string to class
 class JsonParser {
 public:
 
-	//JsonParser(bool);
 	JsonParser() {};
 	bool parse(btring);
 	JsonNode& root();
 
 protected:
 
-	bool parseObject(int& pos, JsonNode&);
-	bool parseArray(int& pos, JsonNode&);
+	bool parseObject(size_t& pos, JsonNode&);
+	bool parseArray(size_t& pos, JsonNode&);
 
-	int getStringLen(int pos);
-	btring getString(int pos,int& len);
+	int getStringLen(size_t pos) const;
+	btring getString(size_t pos,int& len) const;
 
-	int getBooleanLen(int pos);
-	int getNumberLen(int pos);
-	int getNullLen(int pos);
+	int checkBooleanLen(size_t pos) const;
+	int checkNumberLen(size_t pos) const;
+	int checkNullLen(size_t pos) const;
 
-	bool parseKV(int& pos, JsonNode&); 
-	bool parseValue(int& pos, JsonNode&);
+	bool parseKV(size_t& pos, JsonNode&); 
+	bool parseValue(size_t& pos, JsonNode&);
 
-	void setError(int pos,int msg = 0);
+	void throwError(size_t pos,int msg = 0) const;
 
 private:
-	btring json;
+	const btring* json = nullptr;
 	JsonNode _root;
 };
-
 
 //Convert class to json string
 class JsonStringify {
@@ -167,11 +178,12 @@ public:
 	btring stringify(const JsonNode&);
 
 protected:
-	
-	void strifyKV(const JsonNode&, btring&);
-	void strifyValue(const JsonNode&, btring&);
+
 	void dealArray(const JsonNode&, btring&);
 	void dealObject(const JsonNode&, btring&);
+
+	void strifyKV(const btring& k,const JsonNode&, btring&);
+	void strifyValue(const JsonNode&, btring&);
 
 };
 

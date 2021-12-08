@@ -96,6 +96,36 @@ btring& btring::operator=(const char* str) noexcept {
 	return *this;
 }
 
+bool btring::operator>(const btring& str) const noexcept{
+	int len = min(this->size(),str.size());
+	for (int i=0;i<len;i++){
+		if (this->str()[i] == str.str()[i])
+			continue;
+		else
+			return (this->str()[i] > str.str()[i]);
+	}
+	return false;
+}
+
+bool btring::operator<(const btring& str) const noexcept{
+	return !(*this >= str);
+}
+
+bool btring::operator>=(const btring& str) const noexcept{
+	int len = min(this->size(),str.size());
+	for (int i=0;i<len;i++){
+		if (this->str()[i] == str.str()[i])
+			continue;
+		else
+			return (this->str()[i] > str.str()[i]);
+	}
+	return true;
+}
+
+bool btring::operator<=(const btring& str) const noexcept{
+	return !(*this > str);
+}
+
 void btring::fill(uint8_t c, size_t len) {
 	_recap(len);
 	for (size_t i = 0; i < len; i++)
@@ -133,19 +163,19 @@ uint8_t btring::at(size_t pos)const {
 	if (pos >= length) {
 		throw btringException("Index out of bounds");
 		return 0;
-	}
-	else {
+	} else {
 		return content[pos];
 	}
 }
 
 uint8_t& btring::operator[](size_t pos)const noexcept{
+	pos = pos % length;
 	return content[pos];
 }
 
-uint8_t& btring::operator()(size_t pos)const noexcept{
-	pos = pos % length;
-	return content[pos];
+size_t btring::operator()()const noexcept{
+	if (content == nullptr) return 0;
+	return std::hash<const uint8_t*>()(content);
 }
 
 std::string btring::toStdString()const {
