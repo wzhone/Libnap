@@ -1,0 +1,210 @@
+name: Publish Package
+
+on:
+  workflow_dispatch:
+  
+  create:
+    tags:
+      - v*
+
+env:
+  BUILD_TYPE: Release
+  APP_NAME: 'libnap'
+  MAINTAINER: 'wzhone'
+  DESC: 'A Cross-Platform Library of Network Application tools.'
+
+jobs:
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: get version
+        run: echo version=${GITHUB_REF##*/} >> $GITHUB_ENV
+
+      - name: build
+        run: |
+          cd ${{ github.workspace }}
+          mkdir -p build/install/usr
+          cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/build/install/usr
+          make -j `nproc`
+          
+      - name: test
+        run: |
+          cd ${{ github.workspace }}/build
+          ./test/naptest
+
+      - name: install
+        run: |
+          cd ${{ github.workspace }}/build
+          make install
+
+      # 上传Linux的编译结果
+      - uses: actions/upload-artifact@v2
+        with:
+          retention-days: 1
+          name: linux-build-${{ env.version }}
+          path: ${{ github.workspace }}/build
+          
+
+  build-windows:
+    runs-on: windows-2019
+    
+    steps:
+      - uses: actions/checkout@v2
+      - uses: microsoft/setup-msbuild@v1
+
+      - name: build
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -A x64
+          cmake --build . --config Release
+          .\test\Release\naptest.exe
+      
+      # 上传编译的中间结果
+      - uses: actions/upload-artifact@v2
+        with:
+          retention-days: 1
+          name: windows-build
+          path: ${{ github.workspace }}/build
+          
+
+  package-windows:
+    needs: build-windows
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+
+      # 下载上一步的中间文件
+      - uses: actions/download-artifact@v2
+        with:
+          name: windows-build
+          path: ./build
+
+      # 收集所需的数据
+      - name: collect
+        run: |
+          cd ${{ github.workspace }}
+          mkdir libnap\src
+          copy ${{ github.workspace }}\src\*.h ${{ github.workspace }}\libnap\src\
+          copy ${{ github.workspace }}\build\libnap\Release\nap.lib ${{ github.workspace }}\libnap
+      # 打包数据
+      - name: package
+        run: |
+          cd ${{ github.workspace }}
+          7z a libnap.zip libnap
+
+      # 上传编译的中间结果
+      - uses: actions/upload-artifact@v2
+        with:
+          retention-days: 1
+          name: windows-package
+          path: ${{ github.workspace }}/libnap.zip
+
+
+  package-linux:
+    strategy:
+      matrix:
+        os: [rpm,deb]
+
+    runs-on: ubuntu-latest
+    needs: build-linux
+    steps:
+      - name: get version
+        run: echo version=${GITHUB_REF##*/} >> $GITHUB_ENV
+
+      # 下载上一步的中间文件
+      - uses: actions/download-artifact@v2
+        with:
+          name: linux-build-${{ env.version }}
+          path: ./build
+
+      - name: build deb package
+        if: matrix.os == 'deb'
+        uses: jiro4989/build-deb-action@v2
+        with:
+          package: ${{ env.APP_NAME }}
+          package_root: ${{ github.workspace }}/build/install/
+          maintainer: ${{ env.MAINTAINER }}
+          version: ${{ github.ref }}
+          arch: 'amd64'
+          desc: '${{ env.DESC }}'
+
+      - name: build rpm package
+        if: matrix.os == 'rpm'
+        uses: jiro4989/build-rpm-action@v2
+        with:
+          summary: '${{ env.DESC }}'
+          package: ${{ env.APP_NAME }}
+          package_root: ${{ github.workspace }}/build/install/
+          maintainer: ${{ env.MAINTAINER }}
+          version: ${{ github.ref }}
+          arch: 'x86_64'
+          desc: '${{ env.DESC }}'
+          license: 'Apache-2.0'
+
+      - name: delete
+        if: matrix.os == 'rpm'
+        run: rm -f *debuginfo*.rpm
+
+      # 上传打包好的文件
+      - uses: actions/upload-artifact@v2
+        with:
+          retention-days: 1
+          name: ${{ matrix.os }}-${{ env.version }}
+          path: ${{ github.workspace }}/*.${{ matrix.os }}
+
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [package-linux,package-windows]
+    steps:
+
+      - name: get version
+        run: echo version=${GITHUB_REF##*/} >> $GITHUB_ENV
+
+      # 下载ubuntu包
+      - uses: actions/download-artifact@v2
+        with:
+          name: deb-${{ env.version }}
+          path: ./
+
+      # 下载centos包
+      - uses: actions/download-artifact@v2
+        with:
+          name: rpm-${{ env.version }}
+          path: ./
+      
+      # 下载windows包
+      - uses: actions/download-artifact@v2
+        with:
+          name: windows-package
+          path: ./
+
+      - name: prepare CHANGELOG.TXT
+        run: |
+          mv libnap.zip   libnap-${{ env.version }}-windows-amd64.zip
+          mv libnap*.rpm  libnap-${{ env.version }}-centos-x86_64.rpm
+          mv libnap*.deb  libnap-${{ env.version }}-ubuntu-amd64.deb
+
+          echo "## Version: ${{ env.version }}" >> ${{ github.workspace }}-CHANGELOG.TXT
+          echo "Build time: \``date +'%Y/%m/%d %H:%M:%S'`\`" >> ${{ github.workspace }}-CHANGELOG.TXT
+          echo "## Checksum" >> ${{ github.workspace }}-CHANGELOG.TXT
+          echo "- **`sha256sum *.deb`**" >> ${{ github.workspace }}-CHANGELOG.TXT
+          echo "- **`sha256sum *.rpm`**" >> ${{ github.workspace }}-CHANGELOG.TXT
+          echo "- **`sha256sum *.zip`**" >> ${{ github.workspace }}-CHANGELOG.TXT
+
+      - name: publish
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body_path: ${{ github.workspace }}-CHANGELOG.TXT
+          files: | 
+            ${{ github.workspace }}/*.deb
+            ${{ github.workspace }}/*.rpm
+            ${{ github.workspace }}/*.zip
