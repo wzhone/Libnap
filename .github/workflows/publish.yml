@@ -193,11 +193,16 @@ jobs:
           mv libnap*.deb  libnap-${{ env.version }}-ubuntu-amd64.deb
 
           echo "## Version: ${{ env.version }}" >> ${{ github.workspace }}-CHANGELOG.TXT
-          echo "Build time: \``date +'%Y/%m/%d %H:%M:%S'`\`" >> ${{ github.workspace }}-CHANGELOG.TXT
+          echo "Build time: \``date -u +'%Y/%m/%d %H:%M:%S %Z'`\`" >> ${{ github.workspace }}-CHANGELOG.TXT
           echo "## Checksum" >> ${{ github.workspace }}-CHANGELOG.TXT
-          echo "- **`sha256sum *.deb`**" >> ${{ github.workspace }}-CHANGELOG.TXT
-          echo "- **`sha256sum *.rpm`**" >> ${{ github.workspace }}-CHANGELOG.TXT
-          echo "- **`sha256sum *.zip`**" >> ${{ github.workspace }}-CHANGELOG.TXT
+
+          echo "- **`sha256sum *.deb --tag`**" >> ${{ github.workspace }}-CHANGELOG.TXT
+          echo "- **`sha256sum *.rpm --tag`**" >> ${{ github.workspace }}-CHANGELOG.TXT
+          echo "- **`sha256sum *.zip --tag`**" >> ${{ github.workspace }}-CHANGELOG.TXT
+
+          echo "`sha256sum *.deb`" >  ${{ github.workspace }}-sha256sum.txt
+          echo "`sha256sum *.rpm`" >> ${{ github.workspace }}-sha256sum.txt
+          echo "`sha256sum *.zip`" >> ${{ github.workspace }}-sha256sum.txt
 
       - name: publish
         uses: softprops/action-gh-release@v1
@@ -208,3 +213,4 @@ jobs:
             ${{ github.workspace }}/*.deb
             ${{ github.workspace }}/*.rpm
             ${{ github.workspace }}/*.zip
+            ${{ github.workspace }}-sha256sum.txt
