@@ -1,11 +1,10 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
-PROJECT(Libnap)
 
-# use C++ Standard 17
-SET (CMAKE_CXX_STANDARD 17)
 
 # only works on single-configuration generators 
-SET (CMAKE_BUILD_TYPE "Release")
+SET (CMAKE_BUILD_TYPE "Release" CACHE STRING "Compile Mode")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release)
+MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 # only works on multi-config generators
 SET (CMAKE_CONFIGURATION_TYPES "Debug;Release")
@@ -20,6 +19,13 @@ ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
 ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 	MESSAGE(FATAL_ERROR "support platform: ${CMAKE_SYSTEM_NAME}")
 ENDIF ()
+
+
+# init project
+PROJECT(Libnap,CXX)
+
+# use C++ Standard 17
+SET (CMAKE_CXX_STANDARD 17)
 
 # specific module switch
 include(CMakeDependentOption)
