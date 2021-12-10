@@ -6,22 +6,20 @@
 
 <br/>
 
-网络模块包括 net(工具类)，tcpclient(客户端类)，tcpserver(服务端类)，tcpseraccept(服务端accept类)，napcom(协议类)。所有的类都是线程不安全类，在多线程中操作这些资源都需要加锁。
-
-> 详细类定义请见  `src/net.h`
+网络模块包括 net(工具类)，tcpclient(客户端类)，tcpserver(服务端类)，tcpseraccept(服务端accept类)，napcom(协议类)。这些类不是线程安全的。
 
 <br/>
 <br/>
 
-## 使用提示
+## 特点
 
 1. 使用头文件 `libnap.h` 包含所有`libnap`的模块
 2. 所有`libnap`库模块都在`nap`命名空间中
-3. 使用binstream作为字符串资源管理类
-4. 大量使用RAII特性，防止资源泄露
+3. 使用`btring`作为字符串资源管理类
+4. 使用RAII特性，避免资源泄露
 5. 模块主要以支持网络应用为主
-6. 跨平台
-
+6. 具有跨平台的特性
+7. 使用CMake进行项目生成，模块可拆卸
 
 
 ## 模块手册

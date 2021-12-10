@@ -11,7 +11,7 @@ nap库中提供一个简单的json序列化反序列化模块。
 
 setNull 函数可以清空jsonnode 并将其设置为null，以前存储的数据会全部丢失
 
-Json 数组索引从  0 开始
+Json 数组索引从  `0` 开始
 
 ```cpp
 // string to JSON
