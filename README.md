@@ -16,8 +16,11 @@ LIBNAP
 
 A Cross-Platform **LIB**rary of **N**etwork **AP**plication tools
 
-![Ubuntu](https://github.com/wzhone/libnap/workflows/Ubuntu/badge.svg)
-![Windows](https://github.com/wzhone/libnap/workflows/Windows/badge.svg)
+[![Publish Package](https://github.com/wzhone/Libnap/actions/workflows/publish.yml/badge.svg)](https://github.com/wzhone/Libnap/actions/workflows/publish.yml)
+
+[![Ubuntu](https://github.com/wzhone/Libnap/actions/workflows/ubuntu_build.yml/badge.svg)](https://github.com/wzhone/Libnap/actions/workflows/ubuntu_build.yml)
+
+[![Windows](https://github.com/wzhone/Libnap/actions/workflows/msbuild_build.yml/badge.svg)](https://github.com/wzhone/Libnap/actions/workflows/msbuild_build.yml)
 
 <br/>
 
